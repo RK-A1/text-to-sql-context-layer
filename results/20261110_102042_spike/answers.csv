@@ -1,0 +1,1199 @@
+arm,id,repeat,difficulty,keys_disagree,correct_original,correct_corrected,correct_original_tol,correct_corrected_tol,error,final_sql,answer_source,end,steps,n_sql,n_failed_sql,nudged,cost_usd,latency_s,prompt_tokens,completion_tokens
+context,5,1,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON sc.CDSCode = s.cds WHERE s.rtype = 'S' AND s.AvgScrMath > 400 AND sc.Virtual = 'F',submit,submitted,2,2,0,False,0.000367,2.59,7083,316
+hints,5,1,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrMath > 400 AND sc.Virtual = 'F';,submit,submitted,3,3,0,False,0.000366,2.73,4669,355
+context,11,1,simple,True,False,False,False,False,,"SELECT CDSCode FROM frpm WHERE ""Enrollment (K-12)"" > 500",submit,submitted,2,2,0,False,0.000386,2.0,7673,296
+dictionary,5,1,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrMath > 400 AND sc.Virtual = 'F';,submit,submitted,4,4,0,False,0.001217,5.15,19869,488
+schema,5,1,simple,False,True,True,True,True,,SELECT COUNT(*) FROM schools s JOIN satscores t ON s.CDSCode = t.cds WHERE t.AvgScrMath > 400 AND s.Virtual = 'F',submit,submitted,3,3,0,False,0.000417,5.2,4651,542
+hints,11,1,simple,True,True,False,True,False,,SELECT CDSCode FROM frpm WHERE (`Enrollment (K-12)` + `Enrollment (Ages 5-17)`) > 500,submit,submitted,3,3,0,False,0.000586,5.01,4922,512
+schema,11,1,simple,True,False,False,False,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` > 500;,submit,submitted,2,2,0,False,0.000218,3.42,3147,256
+context,12,1,moderate,False,False,False,True,True,,"SELECT MAX(f.""Percent (%) Eligible Free (Ages 5-17)"")
+FROM satscores s
+JOIN frpm f ON s.cds = f.CDSCode
+WHERE s.rtype = 'S'
+  AND s.NumTstTakr > 0
+  AND CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3;",submit,submitted,4,3,0,False,0.00174,6.09,17580,987
+hints,12,1,moderate,False,True,True,True,True,,"SELECT MAX(f.`Free Meal Count (Ages 5-17)` / f.`Enrollment (Ages 5-17)`)
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3;",submit,submitted,3,3,0,False,0.001671,4.7,6019,701
+schema,12,1,moderate,False,False,False,True,True,,"SELECT MAX(f.`Percent (%) Eligible Free (Ages 5-17)`)
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE s.NumTstTakr > 0 AND s.NumGE1500 * 1.0 / s.NumTstTakr > 0.3;",submit,submitted,3,3,0,False,0.000697,3.86,5439,685
+hints,17,1,simple,False,True,True,True,True,,"SELECT sc.CharterNum, s.AvgScrWrite, RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rank FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE sc.CharterNum IS NOT NULL AND s.AvgScrWrite > 499 ORDER BY rank;",submit,submitted,3,3,0,False,0.00044,6.81,5621,623
+dictionary,11,1,simple,True,False,False,False,False,,SELECT cds FROM satscores WHERE enroll12 > 500,submit,submitted,5,6,2,False,0.001715,18.0,26025,2301
+dictionary,12,1,moderate,False,False,False,True,True,,"SELECT MAX(f.`Percent (%) Eligible Free (Ages 5-17)`)
+FROM satscores s
+JOIN frpm f ON f.CDSCode = s.cds
+WHERE CAST(s.NumGE1500 AS REAL)/s.NumTstTakr > 0.3;",submit,submitted,4,4,0,False,0.001032,5.06,22189,780
+hints,23,1,moderate,True,True,False,True,False,,"SELECT s.School, s.Street FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE (f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30",submit,submitted,3,2,0,False,0.000826,11.41,7316,1267
+dictionary,17,1,simple,False,False,False,False,False,,"SELECT sc.CharterNum, s.AvgScrWrite AS avg_write, RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rnk FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrWrite > 499 ORDER BY rnk",submit,submitted,4,5,0,False,0.002216,9.0,21037,1044
+context,17,1,simple,False,False,False,False,False,,"SELECT sc.CharterNum AS ""Charter Number"",
+       s.AvgScrWrite AS ""Average Writing Score"",
+       ROW_NUMBER() OVER (ORDER BY s.AvgScrWrite DESC) AS ""Rank""
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.rtype = 'S'
+  AND s.AvgScrWrite > 499
+  AND sc.CharterNum IS NOT NULL
+ORDER BY s.AvgScrWrite DESC;",submit,submitted,6,11,0,False,0.002657,29.79,34074,3909
+hints,24,1,moderate,True,False,False,False,False,,"SELECT f.`School Name`
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE f.`Percent (%) Eligible Free (K-12)` > 0.1
+  AND s.NumGE1500 >= 1500;",submit,submitted,3,4,0,False,0.001817,13.58,7870,1841
+dictionary,23,1,moderate,True,False,False,False,False,,"SELECT f.`School Name` AS `School Name`, s.Street || ', ' || s.City || ', ' || s.Zip AS `Full Street Address` FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE ABS(f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30",submit,submitted,3,2,0,False,0.000915,9.8,17428,926
+context,23,1,moderate,True,True,False,True,False,,"SELECT s.School, s.Street
+FROM frpm AS f
+JOIN schools AS s ON f.CDSCode = s.CDSCode
+WHERE (f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"") > 30",submit,submitted,2,2,0,False,0.002344,19.57,8312,1858
+dictionary,24,1,moderate,True,False,False,False,False,max_steps,,,max_steps,8,13,1,False,0.001849,22.02,43573,2783
+schema,17,1,simple,False,False,False,False,False,,"SELECT sc.CharterNum, s.AvgScrWrite, RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rank
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.AvgScrWrite > 499;",submit,submitted,7,15,0,False,0.005252,63.02,20113,8453
+schema,23,1,moderate,True,False,False,False,False,,"SELECT f.`School Name`, s.Street FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE ABS(f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30",submit,submitted,3,4,0,False,0.00082,7.98,6751,1120
+dictionary,25,1,moderate,False,False,False,False,False,,"SELECT s.sname, sc.FundingType
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.cname = 'Riverside' AND s.AvgScrMath > 400 AND s.rtype = 'S'
+ORDER BY s.sname;",submit,submitted,8,12,0,False,0.001556,26.83,47926,2473
+schema,24,1,moderate,True,True,False,True,False,,"SELECT DISTINCT f.`School Name`
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE f.`Percent (%) Eligible Free (K-12)` > 0.1
+  AND s.NumGE1500 > 0
+ORDER BY f.`School Name`;",submit,submitted,4,5,0,False,0.001217,14.98,9283,1510
+hints,25,1,moderate,False,True,True,True,True,,"SELECT sc.School, sc.FundingType
+FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode
+WHERE sc.District LIKE 'Riverside%' AND sc.School IS NOT NULL
+GROUP BY sc.CDSCode
+HAVING SUM(s.AvgScrMath) * 1.0 / COUNT(s.cds) > 400
+ORDER BY sc.School",submit,submitted,6,9,0,False,0.005234,76.12,16987,10766
+schema,25,1,moderate,False,False,False,False,False,,"SELECT s.sname AS School, sc.FundingType
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE sc.County = 'Riverside'
+  AND s.rtype = 'S'
+  AND s.AvgScrMath > 400
+ORDER BY s.sname;",submit,submitted,5,10,0,False,0.001399,34.01,15268,2221
+dictionary,26,1,moderate,False,False,False,False,False,,"SELECT s.School AS school_name,
+       s.Street || ', ' || s.City || ', ' || s.State || ' ' || s.Zip AS full_address
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.County = 'Monterey'
+  AND f.`School Type` LIKE '%High%'
+  AND f.`FRPM Count (Ages 5-17)` > 800
+ORDER BY s.School;",submit,submitted,7,12,0,False,0.006001,46.24,47425,7863
+schema,26,1,moderate,False,True,True,True,True,,"SELECT f.`School Name`, s.MailStreet, s.MailCity, s.MailState, s.MailZip
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`County Name` = 'Monterey'
+  AND f.`School Type` LIKE '%High%'
+  AND f.`FRPM Count (Ages 5-17)` > 800
+ORDER BY f.`School Name`;",submit,submitted,4,5,0,False,0.001069,11.72,10946,1537
+hints,26,1,moderate,False,False,False,False,False,,"SELECT s.School AS `School Name`, s.Street || ', ' || s.City || ', ' || s.State || ' ' || s.Zip AS `Full Address`
+FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.County = 'Monterey'
+  AND f.`School Type` LIKE '%High%'
+  AND f.`FRPM Count (Ages 5-17)` > 800
+ORDER BY f.`FRPM Count (Ages 5-17)` DESC;",submit,submitted,6,10,0,False,0.002104,29.72,18604,3643
+dictionary,27,1,moderate,False,False,False,False,False,,"SELECT s.School, ss.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores ss ON ss.cds = s.CDSCode
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'
+ORDER BY s.School;",submit,submitted,7,11,1,False,0.002265,19.4,49318,1725
+hints,27,1,moderate,False,False,False,False,False,,"SELECT s.School, sat.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores sat ON sat.cds = s.CDSCode
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'
+ORDER BY s.School;",submit,submitted,4,6,0,False,0.001435,18.4,10927,2264
+schema,27,1,moderate,False,False,False,False,False,,"SELECT T1.School, T2.AvgScrWrite, T1.Phone
+FROM schools AS T1
+INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds
+WHERE T1.OpenDate > '1991-12-31' OR T1.ClosedDate < '2000-01-01'",submit,submitted,4,7,1,False,0.005102,31.06,10034,4998
+context,24,1,moderate,True,False,False,False,False,max_steps,,,max_steps,8,14,0,False,0.008986,133.06,39820,13271
+context,25,1,moderate,False,False,False,False,False,,"SELECT sc.School, sc.FundingType
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE sc.County = 'Riverside'
+  AND s.rtype = 'S'
+  AND s.AvgScrMath > 400
+ORDER BY sc.School;",submit,submitted,5,10,0,False,0.001725,14.91,24812,1822
+context,26,1,moderate,False,False,False,False,False,,"SELECT s.School, s.MailStreet, s.MailCity, s.MailZip, s.MailState
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.County = 'Monterey'
+  AND s.SOCType = 'High Schools (Public)'
+  AND f.""FRPM Count (Ages 5-17)"" > 800",submit,submitted,3,3,0,False,0.001504,10.74,13111,1335
+context,27,1,moderate,False,False,False,False,False,,"SELECT s.School, sat.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores sat ON sat.cds = s.CDSCode
+WHERE sat.rtype = 'S'
+  AND (s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01')
+ORDER BY s.School",submit,submitted,4,6,0,False,0.001312,9.44,17915,1620
+hints,28,1,challenging,False,False,False,False,False,max_steps,,,max_steps,8,15,0,False,0.005809,63.3,24029,8953
+context,28,1,challenging,False,False,False,False,False,,"SELECT s.School, s.DOCType
+FROM frpm f JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE f.""Charter Funding Type"" = 'Locally funded'
+AND (f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"") > (
+  SELECT AVG(""Enrollment (K-12)"" - ""Enrollment (Ages 5-17)"") FROM frpm WHERE ""Charter Funding Type"" = 'Locally funded'
+);",submit,submitted,4,5,0,False,0.001653,10.51,15872,1353
+hints,31,1,moderate,False,False,False,False,False,,"SELECT `School Name`, `Enrollment (K-12)`, `Free Meal Count (K-12)` * 1.0 / `Enrollment (K-12)` AS `Eligible Free Rate`
+FROM frpm
+ORDER BY `Enrollment (K-12)` DESC
+LIMIT 2 OFFSET 9;",submit,submitted,8,9,0,False,0.002056,25.53,21659,3126
+schema,28,1,challenging,False,False,False,False,False,max_steps,,,max_steps,8,20,0,False,0.005787,82.76,27998,11769
+dictionary,28,1,challenging,False,False,False,False,False,max_steps,,,max_steps,8,17,0,False,0.009093,98.24,60767,13945
+hints,32,1,moderate,False,True,True,True,True,,"SELECT f.`FRPM Count (K-12)` / f.`Enrollment (K-12)` AS rate
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5;",submit,submitted,3,5,0,False,0.002015,9.74,8519,1169
+hints,37,1,moderate,True,True,False,True,False,,"SELECT sch.Street, sch.City, sch.State, sch.Zip
+FROM satscores sc
+JOIN schools sch ON sch.CDSCode = sc.cds
+WHERE sc.NumGE1500 IS NOT NULL AND sc.NumTstTakr > 0
+ORDER BY sc.NumGE1500 * 1.0 / sc.NumTstTakr ASC
+LIMIT 1;",submit,submitted,6,6,0,False,0.00265,42.62,14814,3032
+hints,36,1,challenging,True,False,False,False,False,,"SELECT s.AdmFName1 || ' ' || s.AdmLName1
+FROM schools s JOIN satscores sc ON s.CDSCode = sc.cds
+ORDER BY sc.NumGE1500 DESC LIMIT 1;",submit,submitted,4,3,0,False,0.000634,4.26,6814,526
+context,31,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,17,0,False,0.009373,83.11,54788,13434
+hints,39,1,simple,False,True,True,True,True,,"SELECT AVG(sc.NumTstTakr) AS avg_test_takers
+FROM schools s
+JOIN satscores sc ON s.CDSCode = sc.cds
+WHERE s.County = 'Fresno'
+  AND s.OpenDate >= '1980-01-01'
+  AND s.OpenDate <= '1980-12-31';",submit,submitted,8,11,0,False,0.000958,24.74,18361,1718
+hints,40,1,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL
+ORDER BY s.AvgScrRead ASC
+LIMIT 1;",submit,submitted,4,3,0,False,0.000598,5.37,7677,669
+schema,31,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,19,0,False,0.013569,122.42,29159,18083
+context,32,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,13,1,False,0.005643,60.3,37336,7388
+dictionary,31,1,moderate,False,False,False,False,False,,"SELECT `School Name`, `Percent (%) Eligible Free (K-12)` FROM frpm ORDER BY `Enrollment (K-12)` DESC LIMIT 2 OFFSET 8;",submit,submitted,8,16,0,False,0.010004,126.32,56255,14320
+hints,41,1,simple,True,False,False,False,False,max_steps,,,max_steps,8,15,0,False,0.004987,47.49,27057,7128
+hints,45,1,moderate,False,True,True,True,True,,"SELECT s.School, ss.AvgScrWrite
+FROM schools s
+JOIN satscores ss ON ss.cds = s.CDSCode
+WHERE (s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich')
+   OR (s.AdmFName2 = 'Ricci' AND s.AdmLName2 = 'Ulrich')
+   OR (s.AdmFName3 = 'Ricci' AND s.AdmLName3 = 'Ulrich');",submit,submitted,3,3,0,False,0.00047,6.71,5132,757
+hints,46,1,simple,False,False,False,False,False,,"SELECT f.`School Name`, f.`Enrollment (K-12)`
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE s.DOC = '31'
+ORDER BY f.`Enrollment (K-12)` DESC;",submit,submitted,3,4,1,False,0.000553,3.03,5103,514
+hints,47,1,moderate,False,True,True,True,True,,SELECT COUNT(*) * 1.0 / 12 FROM schools WHERE County = 'Alameda' AND DOC = '52' AND OpenDate LIKE '1980%';,submit,submitted,3,3,0,False,0.000564,5.72,5289,425
+dictionary,32,1,moderate,False,False,False,True,True,,"SELECT f.`Percent (%) Eligible FRPM (K-12)` AS eligible_frpm_rate
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5;",submit,submitted,6,10,0,False,0.001884,21.93,38295,2687
+hints,48,1,moderate,True,True,False,True,False,,"SELECT CAST(SUM(CASE WHEN DOC=54 THEN 1 ELSE 0 END) AS REAL)/SUM(CASE WHEN DOC=52 THEN 1 ELSE 0 END) AS ratio
+FROM schools WHERE StatusType='Merged' AND County='Orange'",submit,submitted,4,6,0,False,0.00139,4.56,6990,624
+dictionary,37,1,moderate,True,True,False,True,False,,"SELECT sc.Street, sc.City, sc.State, sc.Zip
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.NumTstTakr > 0 AND s.NumGE1500 IS NOT NULL
+ORDER BY (s.NumGE1500 * 1.0 / s.NumTstTakr) ASC, s.rowid ASC
+LIMIT 1;",submit,submitted,5,6,0,False,0.001616,19.75,30185,2465
+context,37,1,moderate,True,False,False,False,False,max_steps,,,max_steps,8,15,1,False,0.005129,50.7,38859,6828
+schema,32,1,moderate,False,False,False,True,True,,"SELECT f.`Percent (%) Eligible FRPM (K-12)`
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5",submit,submitted,5,10,0,False,0.005109,52.28,20075,8106
+dictionary,36,1,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1, sc.AdmLName1
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+ORDER BY s.NumGE1500 DESC
+LIMIT 1;",submit,submitted,2,1,0,False,0.001452,5.96,9827,349
+context,36,1,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1 || ' ' || sc.AdmLName1 AS full_name
+FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.rtype = 'S'
+ORDER BY s.NumGE1500 DESC
+LIMIT 1;",submit,submitted,3,3,0,False,0.000839,7.99,11238,665
+dictionary,39,1,simple,False,True,True,True,True,,"SELECT AVG(s.NumTstTakr)
+FROM schools sc
+JOIN satscores s ON s.cds = sc.CDSCode
+WHERE sc.County = 'Fresno'
+  AND sc.OpenDate BETWEEN '1980-01-01' AND '1980-12-31';",submit,submitted,4,6,0,False,0.001654,8.14,20593,763
+hints,50,1,simple,True,False,False,False,False,,"SELECT sname, Street FROM satscores sc JOIN schools s ON sc.cds = s.CDSCode WHERE sc.rtype = 'S' ORDER BY AvgScrMath DESC LIMIT 1 OFFSET 6",submit,submitted,7,9,0,False,0.00192,34.67,17803,2052
+dictionary,40,1,moderate,False,True,True,True,True,,"SELECT sch.Phone
+FROM satscores s
+JOIN schools sch ON sch.CDSCode = s.cds
+WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL
+ORDER BY s.AvgScrRead ASC
+LIMIT 1;",submit,submitted,3,3,0,False,0.001128,4.79,15087,416
+context,39,1,simple,False,True,True,True,True,,SELECT AVG(ss.NumTstTakr) FROM schools s JOIN satscores ss ON ss.cds = s.CDSCode WHERE s.County = 'Fresno' AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31' AND ss.rtype = 'S';,submit,submitted,3,4,0,False,0.001464,10.21,12201,1419
+context,40,1,moderate,False,True,True,True,True,,SELECT schools.Phone FROM satscores JOIN schools ON schools.CDSCode = satscores.cds WHERE satscores.rtype = 'S' AND satscores.dname = 'Fresno Unified' AND satscores.AvgScrRead IS NOT NULL ORDER BY satscores.AvgScrRead ASC LIMIT 1;,submit,submitted,3,3,0,False,0.000319,4.3,11126,406
+dictionary,41,1,simple,True,False,True,False,True,,"WITH r AS (
+  SELECT s.School, s.County, s.Virtual, sa.AvgScrRead,
+         RANK() OVER (PARTITION BY s.County ORDER BY sa.AvgScrRead DESC) AS rk
+  FROM schools s
+  JOIN satscores sa ON s.CDSCode = sa.cds
+  WHERE sa.AvgScrRead IS NOT NULL
+)
+SELECT School
+FROM r
+WHERE Virtual IN ('F','V') AND rk <= 5
+ORDER BY School;",submit,submitted,6,10,0,False,0.006224,13.4,37456,3255
+dictionary,45,1,moderate,False,True,True,True,True,,"SELECT s.School, sc.AvgScrWrite
+FROM schools s
+JOIN satscores sc ON sc.cds = s.CDSCode
+WHERE s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich'",submit,submitted,5,4,0,False,0.000909,8.19,25310,712
+context,41,1,simple,True,False,True,False,True,,"WITH ranked AS (
+  SELECT s.School, s.County, s.Virtual,
+         RANK() OVER (PARTITION BY s.County ORDER BY sat.AvgScrRead DESC) AS rk
+  FROM schools s
+  JOIN satscores sat ON sat.cds = s.CDSCode AND sat.rtype = 'S'
+  WHERE sat.AvgScrRead IS NOT NULL
+)
+SELECT School
+FROM ranked
+WHERE Virtual = 'F' AND rk <= 5
+ORDER BY County, School;",submit,submitted,5,6,0,False,0.001483,18.99,22403,2423
+schema,37,1,moderate,True,False,False,False,False,max_steps,,,max_steps,8,12,0,False,0.00572,47.74,25113,6613
+schema,36,1,challenging,True,False,False,False,False,,"SELECT s.AdmFName1, s.AdmLName1 FROM schools s JOIN satscores ss ON s.CDSCode = ss.cds ORDER BY ss.NumGE1500 DESC LIMIT 1;",submit,submitted,3,3,0,False,0.000342,5.94,5524,465
+context,45,1,moderate,False,True,True,True,True,,"SELECT s.School, sat.AvgScrWrite
+FROM schools s
+JOIN satscores sat ON sat.cds = s.CDSCode
+WHERE (s.AdmLName1 = 'Ulrich' OR s.AdmLName2 = 'Ulrich' OR s.AdmLName3 = 'Ulrich')
+  AND sat.rtype = 'S'",submit,submitted,5,6,0,False,0.001368,14.57,19452,1679
+schema,39,1,simple,False,True,True,True,True,,SELECT AVG(sat.NumTstTakr) FROM schools s JOIN satscores sat ON sat.cds = s.CDSCode WHERE s.County = 'Fresno' AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31',submit,submitted,4,7,0,False,0.001212,11.48,13022,1591
+dictionary,46,1,simple,False,False,False,False,False,max_steps,,,max_steps,8,18,0,False,0.004297,32.86,49013,4333
+schema,40,1,moderate,False,True,True,True,True,,SELECT sc.Phone FROM satscores s JOIN schools sc ON sc.CDSCode = s.cds WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL ORDER BY s.AvgScrRead ASC LIMIT 1;,submit,submitted,3,2,0,False,0.000689,5.06,4944,362
+dictionary,47,1,moderate,False,True,True,True,True,,"SELECT COUNT(*) / 12.0 AS monthly_avg FROM schools WHERE County = 'Alameda' AND DOCType = 'Elementary School District' AND strftime('%Y', OpenDate) = '1980';",submit,submitted,3,3,0,False,0.00097,4.74,14842,360
+context,46,1,simple,False,False,False,False,False,max_steps,,,max_steps,8,14,0,False,0.006034,26.44,37593,4569
+dictionary,48,1,moderate,True,True,False,True,False,,"SELECT
+  SUM(CASE WHEN DOCType='Unified School District' THEN 1 ELSE 0 END) * 1.0 /
+  SUM(CASE WHEN DOCType='Elementary School District' THEN 1 ELSE 0 END) AS ratio
+FROM schools
+WHERE StatusType='Merged' AND County='Orange';",submit,submitted,6,9,0,False,0.002042,16.88,33512,2208
+context,47,1,moderate,False,True,True,True,True,,"SELECT COUNT(*) * 1.0 / 12 AS avg_schools_per_month FROM schools WHERE County = 'Alameda' AND DOCType = 'Elementary School District' AND strftime('%Y', OpenDate) = '1980'",submit,submitted,4,5,0,False,0.000683,9.54,16143,964
+dictionary,50,1,simple,True,False,False,False,False,,"SELECT s.sname AS School, sch.Street AS `Postal Street Address`
+FROM satscores s
+JOIN schools sch ON sch.CDSCode = s.cds
+WHERE s.sname IS NOT NULL
+ORDER BY s.AvgScrMath DESC
+LIMIT 1 OFFSET 6;",submit,submitted,4,4,0,False,0.000945,5.65,21749,866
+context,48,1,moderate,True,True,False,True,False,,"SELECT CAST(SUM(CASE WHEN ""DOCType"" = 'Unified School District' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN ""DOCType"" = 'Elementary School District' THEN 1 ELSE 0 END) AS ratio
+FROM schools
+WHERE ""StatusType"" = 'Merged' AND ""County"" = 'Orange';",submit,submitted,3,3,0,False,0.000444,4.87,12091,454
+schema,41,1,simple,True,False,False,False,False,max_steps,,,max_steps,8,20,0,False,0.003354,27.42,28034,4778
+schema,45,1,moderate,False,True,True,True,True,,"SELECT s.School, AVG(t.AvgScrWrite) AS AvgWritingScore
+FROM schools s
+JOIN satscores t ON t.cds = s.CDSCode
+WHERE s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich'
+GROUP BY s.CDSCode, s.School
+ORDER BY s.School",submit,submitted,3,2,0,False,0.000557,3.15,4824,467
+hints,62,1,challenging,False,True,True,True,True,,"SELECT COUNT(*) 
+FROM frpm 
+WHERE `County Name` = 'Los Angeles' 
+  AND `Charter School (Y/N)` = 0 
+  AND `Free Meal Count (K-12)` * 100 / `Enrollment (K-12)` < 0.18;",submit,submitted,7,13,1,False,0.005954,87.29,21245,12264
+context,50,1,simple,True,False,False,False,False,,"SELECT sc.sname AS School, sch.MailStreet AS PostalStreetAddress
+FROM satscores sc
+JOIN schools sch ON sch.CDSCode = sc.cds
+WHERE sc.rtype = 'S' AND sc.AvgScrMath IS NOT NULL
+ORDER BY sc.AvgScrMath DESC
+LIMIT 1 OFFSET 6",submit,submitted,3,3,0,False,0.000656,6.16,12359,545
+schema,46,1,simple,False,False,False,False,False,,"SELECT ""School Name"", ""Enrollment (K-12)"" FROM frpm WHERE ""School Type"" = 'State Special Schools' ORDER BY ""Enrollment (K-12)"" DESC LIMIT 1",submit,submitted,3,5,0,False,0.0012,5.59,5481,1332
+hints,72,1,moderate,False,True,True,True,True,,"SELECT SUM(f.`Enrollment (Ages 5-17)`)
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.EdOpsCode='SSS' AND s.City='Fremont' AND f.`Academic Year`='2014-2015'",submit,submitted,4,5,1,False,0.000465,7.34,7091,732
+dictionary,62,1,challenging,False,False,False,False,False,,SELECT COUNT(*) FROM frpm WHERE `County Name` = 'Los Angeles' AND `Charter School (Y/N)` = 0 AND `Percent (%) Eligible Free (K-12)` < 0.18;,submit,submitted,5,7,0,False,0.001387,19.82,29971,2125
+context,62,1,challenging,False,False,False,False,False,,"SELECT COUNT(*) FROM frpm WHERE ""County Name"" = 'Los Angeles' AND ""Charter School (Y/N)"" = 0 AND ""Percent (%) Eligible Free (K-12)"" < 0.18",submit,submitted,5,7,1,False,0.001654,15.08,23905,1804
+dictionary,72,1,moderate,False,True,True,True,True,,"SELECT SUM(f.`Enrollment (Ages 5-17)`)
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.City = 'Fremont' AND f.`School Type` = 'State Special Schools' AND f.`Academic Year` = '2014-2015';",submit,submitted,3,3,0,False,0.000599,2.15,15499,520
+hints,77,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,12,0,False,0.001882,10.21,17644,1490
+context,72,1,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"")
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.City = 'Fremont'
+  AND s.DOCType = 'State Special Schools'
+  AND f.""Academic Year"" = '2014-2015';",submit,submitted,4,3,0,False,0.001912,4.73,14945,827
+hints,79,1,moderate,False,False,False,False,False,,"SELECT County, COUNT(*) AS num_schools
+FROM schools
+WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F'
+GROUP BY County
+ORDER BY num_schools DESC",submit,submitted,3,2,0,False,0.000281,4.59,4602,382
+dictionary,77,1,moderate,False,False,False,False,False,,"SELECT s.School, f.`Percent (%) Eligible FRPM (Ages 5-17)` FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9'",submit,submitted,3,4,0,False,0.000981,6.59,15558,686
+dictionary,79,1,moderate,False,False,False,False,False,,"SELECT County, COUNT(*) AS num_exclusively_virtual_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_exclusively_virtual_schools DESC;",submit,submitted,2,1,0,False,0.001491,4.71,9666,265
+context,77,1,moderate,False,False,False,False,False,,"SELECT s.School, f.""Percent (%) Eligible FRPM (Ages 5-17)""
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9';",submit,submitted,4,5,0,False,0.000795,9.18,15563,941
+hints,82,1,simple,False,True,True,True,True,,SELECT GSoffered FROM schools ORDER BY ABS(Longitude) DESC LIMIT 1,submit,submitted,4,4,0,False,0.000559,9.01,7821,815
+context,79,1,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE Virtual = 'F' AND County IN ('San Diego','Santa Barbara') GROUP BY County ORDER BY num_schools DESC LIMIT 1;",submit,submitted,2,2,0,False,0.000208,3.44,7067,297
+hints,83,1,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*)
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.""Low Grade""='K' AND f.""High Grade""='8' AND f.""NSLP Provision Status""='Multiple Provision Types'
+GROUP BY s.City;",submit,submitted,3,4,0,False,0.000892,7.3,5323,902
+dictionary,82,1,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,4,3,0,False,0.00065,9.71,19757,586
+context,82,1,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,4,3,0,False,0.000483,7.46,14378,468
+hints,85,1,moderate,False,False,False,False,False,,"SELECT `District Code`, `Percent (%) Eligible Free (K-12)` FROM frpm WHERE CDSCode = '19648576108609';",submit,submitted,3,2,0,False,0.000471,5.23,5506,326
+dictionary,83,1,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) AS num_schools
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.""NSLP Provision Status"" = 'Multiple Provision Types'
+  AND s.GSoffered = 'K-8'
+GROUP BY s.City",submit,submitted,4,4,0,False,0.000494,8.57,20283,704
+context,83,1,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(DISTINCT s.CDSCode) AS num_schools
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.GSoffered = 'K-8'
+  AND f.""NSLP Provision Status"" = 'Multiple Provision Types'
+GROUP BY s.City
+ORDER BY s.City;",submit,submitted,5,6,0,False,0.001008,6.09,20092,999
+hints,87,1,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2 FROM schools WHERE County = 'San Bernardino' AND City = 'San Bernardino' AND District = 'San Bernardino City Unified' AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND SOC = '62' AND DOC = '54';",submit,submitted,3,2,0,False,0.000431,6.39,5723,575
+dictionary,85,1,moderate,False,False,False,False,False,,"SELECT f.`Percent (%) Eligible Free (K-12)`, f.`District Code` FROM frpm f JOIN schools s ON s.CDSCode = f.CDSCode WHERE s.AdmFName1 = 'Alusine';",submit,submitted,3,3,0,False,0.00054,3.38,15022,444
+hints,5,2,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrMath > 400 AND sc.Virtual = 'F';,submit,submitted,3,3,0,False,0.000578,2.56,4639,357
+context,85,1,moderate,False,False,False,False,False,,"SELECT f.""Percent (%) Eligible Free (K-12)"", f.""District Code"" FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)",submit,submitted,4,3,0,False,0.000763,8.75,14788,699
+hints,11,2,simple,True,True,False,True,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` + `Enrollment (Ages 5-17)` > 500 ORDER BY CDSCode,submit,submitted,3,2,0,False,0.000553,5.41,4961,453
+hints,12,2,moderate,False,True,True,True,True,,"SELECT MAX(1.0 * f.""Free Meal Count (Ages 5-17)"" / f.""Enrollment (Ages 5-17)"") AS highest_free_rate
+FROM satscores s
+JOIN frpm f ON s.cds = f.CDSCode
+WHERE 1.0 * s.NumGE1500 / s.NumTstTakr > 0.3;",submit,submitted,2,1,0,False,0.00055,4.15,3627,544
+dictionary,87,1,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2 FROM schools WHERE County='San Bernardino' AND District='San Bernardino City Unified' AND City='San Bernardino' AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND DOCType='Unified School District' AND SOCType='Intermediate/Middle Schools (Public)';",submit,submitted,5,6,0,False,0.002078,12.79,32348,1207
+schema,47,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,21,0,False,0.009766,62.36,23445,9786
+dictionary,5,2,simple,False,True,True,True,True,,"SELECT COUNT(*) AS cnt
+FROM satscores AS s
+JOIN schools AS sch ON sch.CDSCode = s.cds
+WHERE s.AvgScrMath > 400
+  AND sch.Virtual = 'F';",submit,submitted,3,3,0,False,0.000478,4.96,14830,423
+hints,17,2,simple,False,True,True,True,True,,"SELECT sch.CharterNum,
+       s.AvgScrWrite,
+       RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rnk
+FROM satscores s
+JOIN schools sch ON s.cds = sch.CDSCode
+WHERE sch.CharterNum IS NOT NULL
+  AND s.AvgScrWrite > 499
+ORDER BY rnk, sch.CharterNum",submit,submitted,4,5,0,False,0.002383,7.3,8683,923
+hints,23,2,moderate,True,True,False,True,False,,"SELECT s.School, s.Street
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)` > 30
+ORDER BY s.School;",submit,submitted,3,3,0,False,0.000556,6.48,7387,687
+context,87,1,challenging,False,True,True,True,True,,"SELECT s.AdmEmail1, s.AdmEmail2
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County = 'San Bernardino'
+  AND s.District = 'San Bernardino City Unified'
+  AND s.City = 'San Bernardino'
+  AND s.OpenDate BETWEEN '2009-01-01' AND '2010-12-31'
+  AND s.EILName = 'Intermediate/Middle/Junior High'
+  AND f.""School Type"" = 'Intermediate/Middle Schools (Public)'
+  AND f.""District Type"" = 'Unified School District';",submit,submitted,5,7,0,False,0.002867,22.3,24936,2448
+context,5,2,simple,False,True,True,True,True,,SELECT COUNT(*) FROM schools s JOIN satscores sa ON sa.cds = s.CDSCode WHERE sa.rtype = 'S' AND sa.AvgScrMath > 400 AND s.Virtual = 'F',submit,submitted,2,2,0,False,0.000373,3.99,7026,277
+schema,48,1,moderate,True,True,False,True,False,,SELECT CAST(SUM(CASE WHEN DOCType = 'Unified School District' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN DOCType = 'Elementary School District' THEN 1 ELSE 0 END) AS ratio FROM schools WHERE StatusType = 'Merged' AND County = 'Orange',submit,submitted,7,11,1,False,0.001249,16.66,19269,1726
+context,11,2,simple,True,False,False,False,False,,"SELECT CDSCode FROM frpm WHERE ""Enrollment (K-12)"" > 500 ORDER BY CDSCode;",submit,submitted,2,2,0,False,0.001507,3.63,7514,328
+context,12,2,moderate,False,False,False,True,True,,"SELECT MAX(f.""Percent (%) Eligible Free (Ages 5-17)"")
+FROM satscores s
+JOIN frpm f ON f.CDSCode = s.cds
+WHERE s.rtype = 'S'
+  AND s.NumTstTakr > 0
+  AND CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3;",submit,submitted,2,1,0,False,0.000539,4.68,7347,582
+dictionary,11,2,simple,True,False,False,False,False,,"SELECT CDSCode FROM frpm WHERE ""Enrollment (K-12)"" > 500;",submit,submitted,4,5,1,False,0.002231,30.45,20519,3015
+context,17,2,simple,False,False,False,False,False,,"SELECT sc.CharterNum, s.AvgScrWrite,
+       RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rank
+FROM satscores AS s
+JOIN schools AS sc ON s.cds = sc.CDSCode
+WHERE s.rtype = 'S' AND s.AvgScrWrite > 499
+ORDER BY rank",submit,submitted,3,3,0,False,0.001275,9.23,11524,630
+hints,24,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,15,1,False,0.005625,28.44,24982,5239
+dictionary,12,2,moderate,False,False,False,True,True,,"SELECT MAX(f.`Percent (%) Eligible Free (Ages 5-17)`) AS highest_eligible_free_rate
+FROM satscores s
+JOIN frpm f ON f.CDSCode = s.cds
+WHERE s.NumTstTakr > 0
+  AND 1.0 * s.NumGE1500 / s.NumTstTakr > 0.3;",submit,submitted,3,3,0,False,0.000572,6.65,15660,673
+context,23,2,moderate,True,False,False,False,False,,"SELECT f.""School Name"", s.Street FROM frpm AS f INNER JOIN schools AS s ON f.CDSCode = s.CDSCode WHERE f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" > 30",submit,submitted,2,2,0,False,0.000427,4.92,7934,531
+dictionary,17,2,simple,False,False,False,False,False,,"SELECT sc.CharterNum, s.AvgScrWrite, RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rank FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrWrite > 499 ORDER BY rank",submit,submitted,5,7,1,False,0.003789,46.17,29836,5692
+hints,25,2,moderate,False,True,True,True,True,,"SELECT f.`School Name`, f.`Charter Funding Type`
+FROM frpm AS f
+JOIN satscores AS s ON f.CDSCode = s.cds
+WHERE f.`District Name` LIKE 'Riverside%'
+  AND s.AvgScrMath > 400
+ORDER BY f.`School Name`",submit,submitted,8,13,3,False,0.003838,55.82,24182,7466
+dictionary,23,2,moderate,True,True,False,True,False,,"SELECT s.School, s.Street
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE (f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30;",submit,submitted,7,6,0,False,0.004244,9.28,42941,2649
+context,24,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,8,1,False,0.005419,61.74,37159,6735
+context,25,2,moderate,False,False,False,False,False,,"SELECT s.School, s.FundingType
+FROM schools s
+JOIN satscores sat ON sat.cds = s.CDSCode
+WHERE s.City = 'Riverside'
+  AND sat.rtype = 'S'
+  AND sat.AvgScrMath > 400
+ORDER BY s.School",submit,submitted,3,4,0,False,0.000551,7.45,11357,777
+hints,26,2,moderate,False,False,False,False,False,,"SELECT f.`School Name` AS School, s.Street || ', ' || s.City || ', ' || s.State || ' ' || s.Zip AS Address
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`County Name` = 'Monterey'
+  AND f.`School Type` = 'High Schools (Public)'
+  AND f.`FRPM Count (Ages 5-17)` > 800;",submit,submitted,5,5,0,False,0.001888,23.35,14220,2890
+context,26,2,moderate,False,True,True,True,True,,"SELECT s.School, s.Street, s.City, s.State, s.Zip
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.""County Name"" = 'Monterey'
+  AND f.""School Type"" = 'High Schools (Public)'
+  AND f.""FRPM Count (Ages 5-17)"" > 800",submit,submitted,4,4,0,False,0.001249,10.0,18953,1095
+hints,27,2,moderate,False,False,False,False,False,,"SELECT s.School, ss.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores ss ON s.CDSCode = ss.cds
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'",submit,submitted,3,3,0,False,0.000567,5.78,7025,663
+hints,28,2,challenging,False,True,True,True,True,,"SELECT s.School, s.DOCType
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.FundingType = 'Locally funded'
+  AND (f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > (
+    SELECT AVG(f2.`Enrollment (K-12)` - f2.`Enrollment (Ages 5-17)`)
+    FROM frpm f2 JOIN schools s2 ON f2.CDSCode = s2.CDSCode
+    WHERE s2.FundingType = 'Locally funded'
+  )
+ORDER BY s.School;",submit,submitted,5,6,0,False,0.001261,9.64,12946,1220
+dictionary,24,2,moderate,True,True,False,True,False,,SELECT A.`School Name` FROM frpm AS A JOIN satscores AS B ON A.CDSCode = B.cds WHERE A.`Percent (%) Eligible Free (K-12)` > 0.1 AND B.NumGE1500 > 0 ORDER BY A.`School Name`;,submit,submitted,5,10,0,False,0.001479,39.93,28564,2487
+hints,31,2,moderate,False,True,True,True,True,,"SELECT `Free Meal Count (K-12)` / `Enrollment (K-12)` AS eligible_free_rate
+FROM frpm
+ORDER BY `Enrollment (K-12)` DESC
+LIMIT 2 OFFSET 9;",submit,submitted,3,2,0,False,0.000627,7.43,5622,712
+schema,50,1,simple,True,False,False,False,False,max_steps,,,max_steps,8,16,1,False,0.009017,134.87,25529,11904
+dictionary,25,2,moderate,False,False,False,False,False,,"SELECT T1.sname AS `School Name`, T2.FundingType
+FROM satscores AS T1
+JOIN schools AS T2 ON T1.cds = T2.CDSCode
+WHERE T1.cname = 'Riverside' AND T1.rtype = 'S' AND T1.AvgScrMath > 400
+ORDER BY T1.sname;",submit,submitted,7,14,0,False,0.002825,23.42,53376,2657
+context,27,2,moderate,False,False,False,False,False,,"SELECT s.School, sa.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores sa ON sa.cds = s.CDSCode AND sa.rtype = 'S'
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'
+ORDER BY s.School",submit,submitted,8,17,1,False,0.004381,42.19,49485,7542
+schema,62,1,challenging,False,False,False,False,False,,SELECT COUNT(*) FROM frpm WHERE `County Name` = 'Los Angeles' AND `Charter School (Y/N)` = 0 AND `Percent (%) Eligible Free (K-12)` < 0.18;,submit,submitted,4,5,0,False,0.001225,13.14,9747,1340
+hints,32,2,moderate,False,False,False,False,False,max_steps,,,max_steps,8,16,0,False,0.005351,26.27,25453,4815
+schema,72,1,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"")
+FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.City='Fremont' AND f.""School Type""='State Special Schools';",submit,submitted,3,5,0,False,0.00036,6.33,5233,601
+dictionary,26,2,moderate,False,False,False,False,False,,"SELECT f.`School Name`,
+       s.MailStreet || ', ' || s.MailCity || ', ' || s.MailState || ' ' || s.MailZip AS `Full Communication Address`
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`County Name` = 'Monterey'
+  AND f.`School Type` = 'High Schools (Public)'
+  AND f.`FRPM Count (Ages 5-17)` > 800;",submit,submitted,4,4,0,False,0.000696,16.13,24626,1139
+context,28,2,challenging,False,False,False,False,False,,"SELECT s.School, s.DOCType
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.""Charter Funding Type"" = 'Locally funded'
+  AND f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" >
+      (SELECT AVG(""Enrollment (K-12)"" - ""Enrollment (Ages 5-17)"")
+       FROM frpm
+       WHERE ""Charter Funding Type"" = 'Locally funded')
+ORDER BY s.School",submit,submitted,5,9,0,False,0.001461,15.64,23407,2177
+schema,77,1,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,0,False,0.002049,18.56,19581,1636
+schema,79,1,moderate,False,False,False,False,False,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC;",submit,submitted,4,5,0,False,0.000866,8.95,6653,1058
+schema,82,1,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,3,2,0,False,0.000403,4.86,4738,439
+dictionary,27,2,moderate,False,False,False,False,False,,"SELECT s.School, ss.AvgScrWrite, s.Phone
+FROM schools AS s
+JOIN satscores AS ss ON s.CDSCode = ss.cds
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'",submit,submitted,6,13,0,False,0.002759,31.88,38047,3357
+schema,83,1,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(DISTINCT f.CDSCode) AS num_schools
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE f.`Low Grade` = 'K' AND f.`High Grade` = '8' AND f.`NSLP Provision Status` = 'Multiple Provision Types'
+GROUP BY s.City
+ORDER BY s.City;",submit,submitted,4,4,0,False,0.000648,6.98,7137,748
+schema,85,1,moderate,False,False,False,False,False,,"SELECT f.`District Code`, f.`Percent (%) Eligible Free (K-12)` FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode WHERE s.AdmFName1 = 'Alusine' OR s.AdmFName2 = 'Alusine' OR s.AdmFName3 = 'Alusine';",submit,submitted,2,1,0,False,0.000309,2.53,3102,359
+hints,37,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,15,1,False,0.004126,49.58,24911,6931
+dictionary,28,2,challenging,False,True,True,True,True,,"SELECT s.School, s.DOCType
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.FundingType = 'Locally funded'
+AND f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" > (
+  SELECT AVG(f2.""Enrollment (K-12)"" - f2.""Enrollment (Ages 5-17)"")
+  FROM frpm f2 JOIN schools s2 ON f2.CDSCode = s2.CDSCode
+  WHERE s2.FundingType = 'Locally funded'
+);",submit,submitted,4,5,0,False,0.001493,11.06,21278,1369
+hints,36,2,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1 || ' ' || sc.AdmLName1 AS full_name
+FROM satscores sa JOIN schools sc ON sa.cds = sc.CDSCode
+ORDER BY sa.NumGE1500 DESC LIMIT 1;",submit,submitted,4,4,0,False,0.00136,3.71,7562,811
+schema,87,1,challenging,False,True,True,True,True,,"SELECT s.AdmEmail1, s.AdmEmail2
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County = 'San Bernardino'
+  AND s.City = 'San Bernardino'
+  AND s.District = 'San Bernardino City Unified'
+  AND s.OpenDate >= '2009-01-01' AND s.OpenDate <= '2010-12-31'
+  AND f.`School Type` = 'Intermediate/Middle Schools (Public)'
+  AND f.`District Type` = 'Unified School District'
+  AND s.AdmEmail1 IS NOT NULL AND s.AdmEmail1 <> '' AND s.AdmEmail1 LIKE '%@%'
+  AND s.AdmEmail2 IS NOT NULL AND s.AdmEmail2 <> '' AND s.AdmEmail2 LIKE '%@%';",submit,submitted,4,6,2,False,0.00099,10.5,11761,1375
+hints,39,2,simple,False,True,True,True,True,,"SELECT AVG(sa.NumTstTakr)
+FROM schools s JOIN satscores sa ON s.CDSCode = sa.cds
+WHERE s.County = 'Fresno' AND strftime('%Y', s.OpenDate) = '1980';",submit,submitted,3,3,0,False,0.000326,4.76,5719,401
+hints,40,2,moderate,False,True,True,True,True,,SELECT s.Phone FROM schools s JOIN satscores sa ON s.CDSCode = sa.cds WHERE sa.dname = 'Fresno Unified' AND sa.AvgScrRead IS NOT NULL ORDER BY sa.AvgScrRead ASC LIMIT 1;,submit,submitted,4,4,0,False,0.000848,1.84,7352,468
+schema,5,2,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores sa JOIN schools s ON s.CDSCode = sa.cds WHERE sa.AvgScrMath > 400 AND s.Virtual = 'F',submit,submitted,3,4,0,False,0.000424,6.87,4718,486
+hints,41,2,simple,True,False,False,False,False,,"WITH ranked AS (
+  SELECT s.School AS name,
+         RANK() OVER (PARTITION BY s.County ORDER BY sc.AvgScrRead DESC) AS rk
+  FROM schools s
+  JOIN satscores sc ON sc.cds = s.CDSCode
+  WHERE s.Virtual = 'F' AND sc.AvgScrRead IS NOT NULL
+)
+SELECT name FROM ranked WHERE rk <= 5 ORDER BY name;",submit,submitted,3,5,0,False,0.0006,7.23,6114,938
+schema,11,2,simple,True,False,False,False,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` > 500;,submit,submitted,2,2,0,False,0.000375,3.93,3064,239
+schema,12,2,moderate,False,False,False,True,True,,"SELECT MAX(f.`Percent (%) Eligible Free (Ages 5-17)`) AS max_free_rate
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE s.NumTstTakr > 0 AND (1.0 * s.NumGE1500 / s.NumTstTakr) > 0.3;",submit,submitted,2,1,0,False,0.000778,2.46,3346,443
+hints,45,2,moderate,False,True,True,True,True,,"SELECT sc.School, sats.AvgScrWrite
+FROM schools sc JOIN satscores sats ON sats.cds = sc.CDSCode
+WHERE (sc.AdmFName1='Ricci' AND sc.AdmLName1='Ulrich')
+   OR (sc.AdmFName2='Ricci' AND sc.AdmLName2='Ulrich')
+   OR (sc.AdmFName3='Ricci' AND sc.AdmLName3='Ulrich')",submit,submitted,3,4,0,False,0.000554,5.58,4991,543
+dictionary,31,2,moderate,False,False,False,True,True,,"SELECT `Percent (%) Eligible Free (K-12)`
+FROM frpm
+ORDER BY `Enrollment (K-12)` DESC
+LIMIT 2 OFFSET 9;",submit,submitted,7,8,0,False,0.002989,28.58,42305,3896
+hints,46,2,simple,False,False,False,False,False,,"SELECT s.School, f.`Enrollment (K-12)`
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.DOC = '31'
+ORDER BY f.`Enrollment (K-12)` DESC
+LIMIT 1;",submit,submitted,3,2,0,False,0.000416,6.5,4978,666
+hints,47,2,moderate,False,True,True,True,True,,SELECT COUNT(*)/12.0 AS monthly_avg FROM schools WHERE County = 'Alameda' AND DOC = '52' AND OpenDate >= '1980-01-01' AND OpenDate < '1981-01-01',submit,submitted,3,3,0,False,0.000838,5.32,4946,367
+hints,48,2,moderate,True,True,False,True,False,,"SELECT
+  (SELECT COUNT(*) FROM schools WHERE County = 'Orange' AND StatusType = 'Merged' AND DOC = '54') * 1.0 /
+  (SELECT COUNT(*) FROM schools WHERE County = 'Orange' AND StatusType = 'Merged' AND DOC = '52') AS ratio",submit,submitted,5,6,0,False,0.000714,6.46,8919,757
+dictionary,32,2,moderate,False,False,False,False,False,,"SELECT f.`School Name`, f.`Percent (%) Eligible FRPM (K-12)`
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5;",submit,submitted,5,8,0,False,0.002802,16.54,31162,2282
+context,31,2,moderate,False,False,False,False,False,,"SELECT ""Percent (%) Eligible Free (K-12)""
+FROM frpm
+WHERE ""Low Grade"" = '1' AND ""High Grade"" = '12'
+ORDER BY ""Enrollment (K-12)"" DESC
+LIMIT 2 OFFSET 9;",submit,submitted,6,11,0,False,0.009743,89.89,32092,14347
+hints,50,2,simple,True,False,False,False,False,,"SELECT sc.School, sc.MailStreet FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.rtype = 'S' ORDER BY s.AvgScrMath DESC LIMIT 1 OFFSET 6;",submit,submitted,6,9,0,False,0.002224,19.51,18249,2150
+dictionary,37,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,14,0,False,0.006382,56.95,48033,5906
+context,32,2,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,0,False,0.006913,64.7,42209,8126
+schema,17,2,simple,False,False,False,False,False,max_steps,,,max_steps,8,15,0,False,0.007571,95.31,25131,12140
+dictionary,36,2,challenging,True,False,False,False,False,,"SELECT s.AdmFName1 || ' ' || s.AdmLName1 AS administrator
+FROM satscores sa
+JOIN schools s ON s.CDSCode = sa.cds
+ORDER BY sa.NumGE1500 DESC
+LIMIT 1;",submit,submitted,4,4,0,False,0.000758,14.47,20567,575
+dictionary,39,2,simple,False,True,True,True,True,,SELECT AVG(sa.NumTstTakr) AS avg_test_takers FROM schools s JOIN satscores sa ON s.CDSCode = sa.cds WHERE s.County = 'Fresno' AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31',submit,submitted,3,3,0,False,0.000612,3.14,15877,479
+dictionary,40,2,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL
+ORDER BY s.AvgScrRead ASC
+LIMIT 1;",submit,submitted,3,2,0,False,0.00041,3.29,14977,367
+schema,23,2,moderate,True,True,False,True,False,,"SELECT s.School, s.Street
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)` > 30;",submit,submitted,8,9,0,False,0.003573,18.69,33034,2817
+hints,62,2,challenging,False,False,False,False,False,truncated,,,truncated,5,10,0,False,0.005315,80.76,12739,11842
+schema,24,2,moderate,True,True,False,True,False,,"SELECT f.`School Name`
+FROM frpm f JOIN satscores s ON f.CDSCode = s.cds
+WHERE f.`Percent (%) Eligible Free (K-12)` > 0.1 AND s.NumGE1500 > 0;",submit,submitted,3,4,0,False,0.001177,8.48,6749,1280
+hints,72,2,moderate,False,True,True,True,True,,"SELECT SUM(f.`Enrollment (Ages 5-17)`)
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.EdOpsCode = 'SSS' AND s.City = 'Fremont';",submit,submitted,5,6,2,False,0.000345,7.82,8862,594
+hints,77,2,moderate,False,False,False,False,False,max_steps,,,max_steps,8,16,0,False,0.001842,19.88,20301,2284
+dictionary,41,2,simple,True,False,False,False,False,max_steps,,,max_steps,8,16,0,False,0.004074,46.41,58290,5195
+hints,79,2,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC LIMIT 1;",submit,submitted,2,1,0,False,0.000205,1.96,3024,236
+hints,82,2,simple,False,True,True,True,True,,SELECT GSoffered FROM schools ORDER BY ABS(Longitude) DESC LIMIT 1;,submit,submitted,3,3,0,False,0.000641,4.97,5171,702
+schema,25,2,moderate,False,False,False,False,False,max_steps,,,max_steps,8,17,0,False,0.004408,47.88,23989,6615
+context,37,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,11,1,False,0.006125,79.26,43379,8861
+context,36,2,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1, sc.AdmLName1
+FROM satscores s JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.rtype = 'S'
+ORDER BY s.NumGE1500 DESC
+LIMIT 1",submit,submitted,2,1,0,False,0.000711,2.53,7418,370
+context,39,2,simple,False,True,True,True,True,,"SELECT AVG(sa.NumTstTakr) AS avg_num_test_takers
+FROM schools s
+JOIN satscores sa ON sa.cds = s.CDSCode
+WHERE s.County = 'Fresno'
+  AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31';",submit,submitted,3,3,0,False,0.000525,5.87,12340,696
+context,40,2,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores sa
+JOIN schools sc ON sa.cds = sc.CDSCode
+WHERE sa.rtype = 'S'
+  AND sa.dname = 'Fresno Unified'
+  AND sa.AvgScrRead IS NOT NULL
+ORDER BY sa.AvgScrRead ASC
+LIMIT 1;",submit,submitted,3,3,0,False,0.000853,6.02,11156,471
+schema,26,2,moderate,False,True,True,True,True,,"SELECT f.`School Name`, s.Street, s.City, s.State, s.Zip
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE f.`County Name` = 'Monterey'
+  AND f.`School Type` = 'High Schools (Public)'
+  AND f.`FRPM Count (Ages 5-17)` > 800
+ORDER BY f.`School Name`;",submit,submitted,5,5,0,False,0.002392,18.45,15963,2631
+schema,27,2,moderate,False,False,False,False,False,,"SELECT s.School, ss.AvgScrWrite, s.Phone
+FROM schools s
+JOIN satscores ss ON s.CDSCode = ss.cds
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'
+ORDER BY s.School",submit,submitted,4,6,0,False,0.000926,11.01,10999,1299
+dictionary,45,2,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,1,False,0.002323,51.94,50919,3751
+dictionary,46,2,simple,False,False,False,False,False,max_steps,,,max_steps,8,13,0,False,0.004901,27.15,46751,3987
+dictionary,47,2,moderate,False,False,False,False,False,,"SELECT COUNT(*) * 1.0 / COUNT(DISTINCT strftime('%m', OpenDate)) AS monthly_avg
+FROM schools
+WHERE County = 'Alameda'
+  AND DOCType = 'Elementary School District'
+  AND strftime('%Y', OpenDate) = '1980';",submit,submitted,4,6,0,False,0.000997,11.6,23887,1297
+context,41,2,simple,True,False,False,False,False,max_steps,,,max_steps,8,15,0,False,0.005442,54.46,42358,6711
+dictionary,48,2,moderate,True,True,False,True,False,,"SELECT 
+  SUM(CASE WHEN DOCType = 'Unified School District' THEN 1 ELSE 0 END) * 1.0 /
+  SUM(CASE WHEN DOCType = 'Elementary School District' THEN 1 ELSE 0 END)
+FROM schools
+WHERE StatusType = 'Merged' AND County = 'Orange';",submit,submitted,4,6,0,False,0.001636,5.51,20634,1003
+context,45,2,moderate,False,True,True,True,True,,"SELECT sc.school, sat.avgscrwrite FROM schools AS sc INNER JOIN satscores AS sat ON sc.cdscode = sat.cds WHERE (sc.admfname1 = 'Ricci' AND sc.admlname1 = 'Ulrich') OR (sc.admfname2 = 'Ricci' AND sc.admlname2 = 'Ulrich') OR (sc.admfname3 = 'Ricci' AND sc.admlname3 = 'Ulrich')",submit,submitted,3,4,0,False,0.000676,8.9,11590,1074
+dictionary,50,2,simple,True,False,False,False,False,,"SELECT sc.sname, s.Street
+FROM satscores sc
+JOIN schools s ON sc.cds = s.CDSCode
+WHERE sc.sname IS NOT NULL
+ORDER BY sc.AvgScrMath DESC
+LIMIT 1 OFFSET 6;",submit,submitted,5,5,0,False,0.000982,14.69,27695,1507
+context,46,2,simple,False,False,False,False,False,,"SELECT ss.sname, ss.enroll12
+FROM satscores ss
+JOIN schools s ON s.CDSCode = ss.cds
+WHERE s.DOC = '31' AND ss.rtype = 'S'
+ORDER BY ss.enroll12 DESC
+LIMIT 1",submit,submitted,6,7,0,False,0.003103,12.47,30273,1970
+hints,83,2,challenging,True,False,False,False,False,truncated,,,truncated,5,8,0,False,0.004923,111.24,18489,9649
+context,47,2,moderate,False,True,True,True,True,,"SELECT COUNT(*) * 1.0 / 12 AS monthly_avg FROM schools WHERE County = 'Alameda' AND DOCType = 'Elementary School District' AND strftime('%Y', OpenDate) = '1980'",submit,submitted,4,4,0,False,0.000674,6.21,15119,613
+context,48,2,moderate,True,True,False,True,False,,"SELECT CAST(SUM(CASE WHEN ""DOCType""='Unified School District' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN ""DOCType""='Elementary School District' THEN 1 ELSE 0 END) AS ratio FROM schools WHERE ""StatusType""='Merged' AND ""County""='Orange'",submit,submitted,3,4,0,False,0.000465,5.6,11086,704
+hints,85,2,moderate,False,False,False,True,True,,"SELECT f.`Free Meal Count (K-12)` / f.`Enrollment (K-12)` * 100 AS `Percent (%) Eligible Free (K-12)`, f.`District Code`
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.AdmFName1 = 'Alusine' OR s.AdmFName2 = 'Alusine' OR s.AdmFName3 = 'Alusine';",submit,submitted,4,3,0,False,0.000806,13.27,6958,1543
+context,50,2,simple,True,False,False,False,False,,"SELECT sc.sname AS School, s.Street
+FROM satscores sc
+JOIN schools s ON s.CDSCode = sc.cds
+WHERE sc.rtype = 'S' AND sc.AvgScrMath IS NOT NULL
+ORDER BY sc.AvgScrMath DESC
+LIMIT 1 OFFSET 6;",submit,submitted,3,2,0,False,0.001037,5.47,10947,570
+schema,28,2,challenging,False,True,True,True,True,,"SELECT s.School, s.DOCType
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.""FundingType"" = 'Locally funded'
+  AND f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" > (
+    SELECT AVG(f2.""Enrollment (K-12)"" - f2.""Enrollment (Ages 5-17)"")
+    FROM frpm f2
+    JOIN schools s2 ON f2.CDSCode = s2.CDSCode
+    WHERE s2.""FundingType"" = 'Locally funded'
+  );",submit,submitted,8,15,0,False,0.007789,80.4,27264,11299
+dictionary,62,2,challenging,False,False,False,False,False,,"SELECT COUNT(*) AS num_non_charter_LA_schools
+FROM frpm
+WHERE `County Name` = 'Los Angeles'
+  AND `Charter School (Y/N)` = 0
+  AND `Percent (%) Eligible Free (K-12)` < 0.18;",submit,submitted,4,7,0,False,0.003825,24.16,23352,3685
+hints,87,2,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2 FROM schools WHERE County = 'San Bernardino' AND City = 'San Bernardino' AND District = 'San Bernardino City Unified' AND SOC = 62 AND DOC = 54 AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND AdmEmail1 IS NOT NULL AND AdmEmail1 LIKE '%_@_%._%' AND AdmEmail2 IS NOT NULL AND AdmEmail2 LIKE '%_@_%._%';",submit,submitted,4,3,0,False,0.00056,8.01,7768,888
+hints,5,3,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrMath > 400 AND sc.Virtual = 'F';,submit,submitted,2,2,0,False,0.000446,1.97,3008,279
+context,62,2,challenging,False,False,False,False,False,,"SELECT COUNT(*) AS num_schools
+FROM frpm
+WHERE ""County Name"" = 'Los Angeles'
+  AND ""Charter School (Y/N)"" = 0
+  AND ""Percent (%) Eligible Free (K-12)"" < 0.18",submit,submitted,3,4,0,False,0.000697,9.84,11115,1186
+hints,11,3,simple,True,True,False,True,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` + `Enrollment (Ages 5-17)` > 500,submit,submitted,2,1,0,False,0.000342,2.79,3685,259
+dictionary,72,2,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"") AS total FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE s.SOCType = 'State Special Schools' AND s.City = 'Fremont'",submit,submitted,5,7,1,False,0.002974,10.15,26188,1120
+context,72,2,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"") AS total_enrollment_ages_5_17
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.City = 'Fremont'
+  AND s.SOCType = 'State Special Schools'
+  AND f.""Academic Year"" = '2014-2015';",submit,submitted,5,5,1,False,0.00073,9.1,20116,855
+schema,31,2,moderate,False,False,False,False,False,,SELECT `Percent (%) Eligible Free (K-12)` FROM frpm WHERE `Low Grade` = '1' AND `High Grade` = '12' ORDER BY `Enrollment (K-12)` DESC LIMIT 2 OFFSET 9,submit,submitted,4,5,0,False,0.001712,19.07,8722,2424
+dictionary,77,2,moderate,False,False,False,False,False,,"SELECT s.School, f.`Percent (%) Eligible FRPM (Ages 5-17)`
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9';",submit,submitted,4,4,0,False,0.000713,5.45,20408,712
+hints,12,3,moderate,False,True,True,True,True,,"SELECT MAX(CAST(f.`Free Meal Count (Ages 5-17)` AS REAL) / f.`Enrollment (Ages 5-17)`) AS highest_eligible_free_rate
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE s.NumTstTakr > 0
+  AND CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3;",submit,submitted,3,3,0,False,0.001148,10.63,5583,1154
+dictionary,79,2,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC LIMIT 1;",submit,submitted,3,2,0,False,0.001605,7.26,14692,438
+context,77,2,moderate,False,False,False,False,False,,"SELECT s.School, f.""Percent (%) Eligible FRPM (Ages 5-17)""
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9';",submit,submitted,3,4,0,False,0.000698,7.69,12245,678
+hints,17,3,simple,False,True,True,True,True,,"SELECT sc.CharterNum,
+       s.AvgScrWrite,
+       RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rnk
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.AvgScrWrite > 499
+  AND sc.CharterNum IS NOT NULL
+ORDER BY rnk, sc.CharterNum;",submit,submitted,5,8,0,False,0.003261,7.61,16764,1228
+dictionary,82,2,simple,False,False,False,False,False,,SELECT GSoffered FROM schools WHERE Longitude = (SELECT MAX(Longitude) FROM schools);,submit,submitted,4,3,0,False,0.001148,5.28,19792,416
+context,79,2,moderate,False,False,False,False,False,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC",submit,submitted,3,3,0,False,0.000336,6.73,10802,509
+context,82,2,simple,False,False,False,False,False,,SELECT GSoffered FROM schools WHERE Longitude = (SELECT MAX(Longitude) FROM schools);,submit,submitted,4,3,0,False,0.000432,5.56,14478,398
+hints,23,3,moderate,True,False,False,False,False,,"SELECT s.School, s.Street || ', ' || s.City || ', ' || s.State || ' ' || s.Zip AS `Full Address` FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE (f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30;",submit,submitted,6,5,0,False,0.003573,10.1,16486,1830
+dictionary,83,2,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) AS num_schools
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.GSoffered = 'K-8'
+  AND f.`NSLP Provision Status` = 'Multiple Provision Types'
+GROUP BY s.City;",submit,submitted,5,7,0,False,0.000996,13.72,26639,1604
+dictionary,85,2,moderate,False,False,False,False,False,,"SELECT f.`District Code`, f.`Percent (%) Eligible Free (K-12)` FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE s.AdmFName1 = 'Alusine';",submit,submitted,3,3,0,False,0.000877,3.56,15533,436
+context,83,2,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) AS num_schools
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE f.""NSLP Provision Status"" = 'Multiple Provision Types'
+  AND s.GSoffered = 'K-8'
+GROUP BY s.City
+ORDER BY s.City;",submit,submitted,6,8,0,False,0.000984,11.95,24672,1243
+context,85,2,moderate,False,False,False,False,False,,"SELECT f.""Percent (%) Eligible Free (K-12)"", f.""District Code""
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.AdmFName1 = 'Alusine' OR s.AdmFName2 = 'Alusine' OR s.AdmFName3 = 'Alusine';",submit,submitted,3,2,0,False,0.000541,2.98,10783,485
+dictionary,87,2,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2
+FROM schools
+WHERE County = 'San Bernardino'
+  AND District = 'San Bernardino City Unified'
+  AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31'
+  AND DOCType = 'Unified School District'
+  AND SOCType = 'Intermediate/Middle Schools (Public)';",submit,submitted,4,6,0,False,0.001052,7.11,22448,975
+dictionary,5,3,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.AvgScrMath > 400 AND sc.Virtual = 'F';,submit,submitted,2,2,0,False,0.000344,2.05,9672,287
+schema,32,2,moderate,False,False,False,True,True,,"SELECT f.""Percent (%) Eligible FRPM (K-12)""
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.""FRPM Count (K-12)"" DESC
+LIMIT 5;",submit,submitted,6,8,0,False,0.001592,40.63,24900,2924
+context,87,2,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2
+FROM schools
+WHERE County = 'San Bernardino'
+  AND District = 'San Bernardino City Unified'
+  AND City = 'San Bernardino'
+  AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31'
+  AND EILName = 'Intermediate/Middle/Junior High'
+  AND DOCType = 'Unified School District';",submit,submitted,4,7,0,False,0.001643,8.92,18863,1360
+dictionary,11,3,simple,True,False,False,False,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` > 500,submit,submitted,3,4,0,False,0.001223,4.57,15997,577
+context,5,3,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.rtype = 'S' AND s.AvgScrMath > 400 AND sc.Virtual = 'F',submit,submitted,3,3,0,False,0.000459,3.11,10926,423
+dictionary,12,3,moderate,False,False,False,True,True,,SELECT MAX(f.`Percent (%) Eligible Free (Ages 5-17)`) FROM satscores s JOIN frpm f ON s.cds = f.CDSCode WHERE CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3,submit,submitted,4,4,0,False,0.000994,7.88,21818,669
+context,11,3,simple,True,False,False,False,False,,"SELECT CDSCode FROM frpm WHERE ""Enrollment (K-12)"" > 500",submit,submitted,3,3,0,False,0.00091,5.57,11958,521
+dictionary,17,3,simple,False,False,False,False,False,,"SELECT sc.CharterNum, s.AvgScrWrite, RANK() OVER (ORDER BY s.AvgScrWrite DESC) AS rank
+FROM satscores s
+JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.AvgScrWrite > 499
+ORDER BY rank",submit,submitted,3,3,0,False,0.000567,8.48,15605,823
+context,12,3,moderate,False,True,True,True,True,,"SELECT MAX(CAST(f.""Free Meal Count (Ages 5-17)"" AS REAL) / f.""Enrollment (Ages 5-17)"")
+FROM satscores s
+JOIN frpm f ON f.CDSCode = s.cds
+WHERE s.rtype = 'S'
+  AND CAST(s.NumGE1500 AS REAL) / s.NumTstTakr > 0.3;",submit,submitted,4,3,0,False,0.000738,11.37,15201,1242
+schema,37,2,moderate,True,False,False,False,False,max_steps,,,max_steps,8,8,2,False,0.003169,31.67,18911,4716
+dictionary,23,3,moderate,True,False,False,False,False,,"SELECT f.`School Name`, s.Street AS `Street Address`
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE ABS(f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)`) > 30
+ORDER BY f.`School Name`;",submit,submitted,6,5,2,False,0.001214,13.83,32630,1529
+schema,36,2,challenging,True,False,False,False,False,,"SELECT TRIM(COALESCE(s.AdmFName1,'') || ' ' || COALESCE(s.AdmLName1,'')) AS FullName
+FROM satscores ss JOIN schools s ON ss.cds = s.CDSCode
+ORDER BY ss.NumGE1500 DESC LIMIT 1;",submit,submitted,3,2,0,False,0.000781,2.69,4815,419
+hints,24,3,moderate,True,False,False,False,False,max_steps,,,max_steps,8,12,0,False,0.006335,58.21,26329,8447
+schema,39,2,simple,False,True,True,True,True,,"SELECT AVG(sa.NumTstTakr)
+FROM schools s
+JOIN satscores sa ON sa.cds = s.CDSCode
+WHERE s.County = 'Fresno'
+  AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31';",submit,submitted,4,6,0,False,0.000972,7.29,12466,759
+schema,40,2,moderate,False,True,True,True,True,,SELECT sc.Phone FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL ORDER BY s.AvgScrRead ASC LIMIT 1;,submit,submitted,3,3,0,False,0.00043,3.49,5248,531
+dictionary,24,3,moderate,True,True,False,True,False,,"SELECT f.`School Name`
+FROM frpm f
+JOIN satscores s ON f.CDSCode = s.cds
+WHERE f.`Percent (%) Eligible Free (K-12)` > 0.1
+  AND s.NumGE1500 > 0
+ORDER BY f.`School Name`;",submit,submitted,5,6,0,False,0.001435,18.66,29653,2347
+schema,41,2,simple,True,False,False,False,False,max_steps,,,max_steps,8,20,0,False,0.004112,36.53,41133,5993
+schema,45,2,moderate,False,True,True,True,True,,"SELECT s.School, a.AvgScrWrite
+FROM schools s
+JOIN satscores a ON a.cds = s.CDSCode
+WHERE s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich'",submit,submitted,3,2,0,False,0.000581,4.74,4718,376
+context,17,3,simple,False,False,False,False,False,max_steps,,,max_steps,8,19,1,False,0.005024,70.96,39724,9367
+dictionary,25,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,13,0,False,0.004575,42.42,55041,5563
+schema,46,2,simple,False,False,False,False,False,,"SELECT `School Name`, `Enrollment (K-12)` FROM frpm WHERE `School Type`='State Special Schools' ORDER BY `Enrollment (K-12)` DESC;",submit,submitted,4,6,0,False,0.002855,10.4,10731,1623
+context,23,3,moderate,True,True,False,True,False,,"SELECT s.School, s.Street
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" > 30",submit,submitted,2,2,0,False,0.001189,4.79,8214,1251
+schema,47,2,moderate,False,True,True,True,True,,"SELECT COUNT(*) / 12.0 AS monthly_avg
+FROM schools
+WHERE County = 'Alameda'
+  AND DOCType = 'Elementary School District'
+  AND OpenDate >= '1980-01-01'
+  AND OpenDate < '1981-01-01';",submit,submitted,4,5,0,False,0.000562,7.17,8576,748
+dictionary,26,3,moderate,False,True,True,True,True,,"SELECT f.`School Name`, s.MailStreet, s.MailCity, s.MailState, s.MailZip
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`County Name`='Monterey' AND f.`School Type`='High Schools (Public)' AND f.`FRPM Count (Ages 5-17)`>800;",submit,submitted,4,5,0,False,0.001648,20.98,26931,2477
+hints,25,3,moderate,False,False,False,False,False,truncated,,,truncated,8,15,1,False,0.011257,81.6,31220,15415
+context,24,3,moderate,True,False,False,False,False,,"SELECT s.School
+FROM frpm AS f
+JOIN satscores AS t ON t.cds = f.CDSCode
+JOIN schools AS s ON s.CDSCode = f.CDSCode
+WHERE t.rtype = 'S'
+  AND f.""Percent (%) Eligible Free (K-12)"" > 0.1
+  AND t.NumGE1500 > 0;",submit,submitted,4,4,0,False,0.001639,22.13,16150,2434
+schema,48,2,moderate,True,True,False,True,False,,"SELECT 
+  (SELECT COUNT(*) FROM schools WHERE StatusType='Merged' AND County='Orange' AND DOCType='Unified School District') * 1.0 /
+  (SELECT COUNT(*) FROM schools WHERE StatusType='Merged' AND County='Orange' AND DOCType='Elementary School District') AS ratio",submit,submitted,8,13,0,False,0.0031,17.65,22931,2352
+context,25,3,moderate,False,False,False,False,False,,"SELECT sc.School, sc.FundingType
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.cname = 'Riverside' AND s.rtype = 'S' AND s.AvgScrMath > 400;",submit,submitted,4,5,0,False,0.001683,7.23,20215,886
+dictionary,27,3,moderate,False,False,False,False,False,,"SELECT s.School AS `School Name`, sat.AvgScrWrite AS `Average Score in Writing`, s.Phone AS `Phone`
+FROM satscores sat
+JOIN schools s ON s.CDSCode = sat.cds
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'
+ORDER BY s.CDSCode",submit,submitted,5,5,0,False,0.001725,14.48,28390,1652
+context,26,3,moderate,False,False,False,False,False,,"SELECT s.School, s.Street, s.City, s.Zip, s.State
+FROM schools s JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County='Monterey' AND f.""FRPM Count (Ages 5-17)"" > 800
+AND f.""School Type"" LIKE 'High%'",submit,submitted,4,4,0,False,0.002114,8.04,22644,1235
+schema,50,2,simple,True,False,False,False,False,max_steps,,,max_steps,8,10,1,False,0.00165,23.6,18987,2697
+hints,26,3,moderate,False,False,False,False,False,,"SELECT s.School AS `School Name`,
+       s.Street || ', ' || s.City || ', ' || s.State || ' ' || s.Zip AS `Address`
+FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.County = 'Monterey' AND f.`School Type` = 'High Schools (Public)'
+  AND f.`FRPM Count (Ages 5-17)` > 800
+ORDER BY s.School;",submit,submitted,8,10,0,False,0.00214,28.1,25778,3412
+dictionary,28,3,challenging,False,False,False,False,False,,"SELECT f.`School Name`, s.DOCType
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`Charter Funding Type` = 'Locally funded'
+AND f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)` > (SELECT AVG(`Enrollment (K-12)`-`Enrollment (Ages 5-17)`) FROM frpm WHERE `Charter Funding Type`='Locally funded');",submit,submitted,6,8,0,False,0.001819,20.13,36805,2619
+schema,62,2,challenging,False,False,False,False,False,,"SELECT COUNT(*) AS total
+FROM frpm
+WHERE `County Name` = 'Los Angeles'
+  AND `Charter School (Y/N)` = 0
+  AND `Percent (%) Eligible Free (K-12)` < 0.18;",submit,submitted,4,6,0,False,0.003496,18.14,8430,3490
+schema,72,2,moderate,False,True,True,True,True,,"SELECT SUM(f.`Enrollment (Ages 5-17)`)
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.City='Fremont' AND f.`School Type`='State Special Schools' AND f.`Academic Year`='2014-2015'",submit,submitted,4,4,0,False,0.001014,3.33,7638,535
+schema,77,2,moderate,False,False,False,False,False,,"SELECT s.School, f.`Percent (%) Eligible FRPM (Ages 5-17)`
+FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9'
+ORDER BY s.School;",submit,submitted,5,7,0,False,0.001349,6.38,10105,1366
+context,27,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,1,False,0.002574,42.0,39466,3998
+schema,79,2,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS NumSchools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY NumSchools DESC LIMIT 1;",submit,submitted,3,5,0,False,0.000459,7.07,5244,701
+schema,82,2,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,2,1,0,False,0.000136,3.02,2967,203
+dictionary,31,3,moderate,False,False,False,True,True,,SELECT `Percent (%) Eligible Free (K-12)` FROM frpm ORDER BY `Enrollment (K-12)` DESC LIMIT 2 OFFSET 9;,submit,submitted,5,4,0,False,0.002746,33.35,28476,3884
+schema,83,2,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE f.""Low Grade"" = 'K' AND f.""High Grade"" = '8' AND f.""NSLP Provision Status"" = 'Multiple Provision Types' GROUP BY s.City;",submit,submitted,4,9,0,False,0.000787,5.31,8240,996
+hints,27,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,16,0,False,0.002805,41.27,23128,5344
+schema,85,2,moderate,False,False,False,False,False,,"SELECT f.`Percent (%) Eligible Free (K-12)`, f.`District Code`
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE s.AdmFName1 = 'Alusine' OR s.AdmFName2 = 'Alusine' OR s.AdmFName3 = 'Alusine';",submit,submitted,3,2,0,False,0.000647,2.06,4692,401
+schema,87,2,challenging,False,True,True,True,True,,"SELECT s.AdmEmail1, s.AdmEmail2 FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode WHERE s.County = 'San Bernardino' AND s.District = 'San Bernardino City Unified' AND s.City = 'San Bernardino' AND s.OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND f.`School Type` = 'Intermediate/Middle Schools (Public)' AND f.`District Type` = 'Unified School District';",submit,submitted,4,3,0,False,0.001469,3.82,11119,1145
+context,28,3,challenging,False,True,True,True,True,,"SELECT s.School, s.DOCType
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.FundingType = 'Locally funded'
+  AND f.""Enrollment (K-12)"" - f.""Enrollment (Ages 5-17)"" > (
+      SELECT AVG(f2.""Enrollment (K-12)"" - f2.""Enrollment (Ages 5-17)"")
+      FROM frpm f2
+      JOIN schools s2 ON f2.CDSCode = s2.CDSCode
+      WHERE s2.FundingType = 'Locally funded'
+  );",submit,submitted,5,9,0,False,0.002217,17.34,21049,2267
+hints,28,3,challenging,False,True,True,True,True,,"SELECT s.School, s.DOCType
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.`FundingType` = 'Locally funded'
+AND f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)` > (
+  SELECT AVG(f2.`Enrollment (K-12)` - f2.`Enrollment (Ages 5-17)`)
+  FROM frpm f2 JOIN schools s2 ON f2.CDSCode = s2.CDSCode
+  WHERE s2.`FundingType` = 'Locally funded'
+)",submit,submitted,6,8,0,False,0.001406,8.0,14989,1440
+schema,5,3,simple,False,True,True,True,True,,SELECT COUNT(*) FROM satscores sat JOIN schools s ON sat.cds = s.CDSCode WHERE sat.AvgScrMath > 400 AND s.Virtual = 'F';,submit,submitted,3,4,0,False,0.00042,3.53,4686,480
+dictionary,32,3,moderate,False,False,False,True,True,,"SELECT f.`Percent (%) Eligible FRPM (K-12)`
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5;",submit,submitted,4,5,1,False,0.002108,22.34,22687,1847
+hints,31,3,moderate,False,True,True,True,True,,"SELECT `Free Meal Count (K-12)` * 1.0 / `Enrollment (K-12)` AS eligible_free_rate
+FROM frpm
+WHERE `Enrollment (K-12)` IS NOT NULL
+ORDER BY `Enrollment (K-12)` DESC
+LIMIT 2 OFFSET 9;",submit,submitted,3,2,0,False,0.000955,14.33,5615,1892
+schema,11,3,simple,True,False,False,False,False,,SELECT CDSCode FROM frpm WHERE `Enrollment (K-12)` > 500;,submit,submitted,3,3,0,False,0.000592,15.17,5353,512
+schema,12,3,moderate,False,False,False,True,True,,"SELECT f.`Percent (%) Eligible Free (Ages 5-17)`
+FROM satscores s JOIN frpm f ON f.CDSCode = s.cds
+WHERE s.NumGE1500*1.0/s.NumTstTakr > 0.3
+ORDER BY f.`Percent (%) Eligible Free (Ages 5-17)` DESC
+LIMIT 1",submit,submitted,4,3,0,False,0.000701,15.9,7603,643
+schema,17,3,simple,False,False,False,False,False,,"SELECT s.CharterNum, sat.AvgScrWrite, RANK() OVER (ORDER BY sat.AvgScrWrite DESC) AS rnk
+FROM satscores sat
+JOIN schools s ON sat.cds = s.CDSCode
+WHERE sat.AvgScrWrite > 499
+ORDER BY rnk, s.CharterNum;",submit,submitted,5,7,0,False,0.000929,12.38,11383,1442
+hints,32,3,moderate,False,True,True,True,True,,"SELECT f.`FRPM Count (K-12)` / f.`Enrollment (K-12)` AS `Eligible FRPM Rate (K-12)`
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5",submit,submitted,7,11,1,False,0.00386,30.0,18143,4881
+dictionary,37,3,moderate,True,True,False,True,False,,"SELECT sc.Street, sc.City, sc.State, sc.Zip
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.NumTstTakr > 0 AND s.NumGE1500 IS NOT NULL
+ORDER BY (s.NumGE1500 * 1.0 / s.NumTstTakr) ASC, s.cds ASC
+LIMIT 1;",submit,submitted,8,11,0,False,0.004757,65.5,57055,8754
+schema,23,3,moderate,True,False,False,False,False,,"SELECT f.`School Name`, s.Street
+FROM frpm AS f
+INNER JOIN schools AS s ON f.CDSCode = s.CDSCode
+WHERE f.`Enrollment (K-12)` - f.`Enrollment (Ages 5-17)` > 30",submit,submitted,8,11,2,False,0.004942,31.5,25251,7494
+dictionary,36,3,challenging,True,False,False,False,False,,"SELECT s.AdmFName1 || ' ' || s.AdmLName1 AS full_name
+FROM satscores ss JOIN schools s ON ss.cds = s.CDSCode
+ORDER BY ss.NumGE1500 DESC LIMIT 1;",submit,submitted,3,2,0,False,0.000588,5.97,14846,458
+dictionary,39,3,simple,False,True,True,True,True,,SELECT AVG(sat.NumTstTakr) FROM schools s JOIN satscores sat ON sat.cds = s.CDSCode WHERE s.County = 'Fresno' AND s.OpenDate BETWEEN '1980-01-01' AND '1980-12-31',submit,submitted,3,6,0,False,0.002561,5.41,15520,889
+hints,37,3,moderate,True,False,False,False,False,max_steps,,,max_steps,8,8,1,False,0.002708,41.54,19268,5269
+dictionary,40,3,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores sa
+JOIN schools sc ON sc.CDSCode = sa.cds
+WHERE sa.dname = 'Fresno Unified' AND sa.AvgScrRead IS NOT NULL
+ORDER BY sa.AvgScrRead ASC
+LIMIT 1;",submit,submitted,4,4,0,False,0.000558,4.36,20739,490
+context,31,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,1,False,0.006843,97.54,48719,14043
+hints,36,3,challenging,True,False,False,False,False,,"SELECT adm.full_name
+FROM schools s
+JOIN satscores ss ON ss.cds = s.CDSCode
+CROSS JOIN (
+  SELECT s.CDSCode, s.AdmFName1 || ' ' || s.AdmLName1 AS full_name FROM schools s
+  UNION ALL SELECT s.CDSCode, s.AdmFName2 || ' ' || s.AdmLName2 FROM schools s
+  UNION ALL SELECT s.CDSCode, s.AdmFName3 || ' ' || s.AdmLName3 FROM schools s
+) adm ON adm.CDSCode = s.CDSCode
+WHERE ss.NumGE1500 = (SELECT MAX(NumGE1500) FROM satscores)
+  AND adm.full_name IS NOT NULL
+  AND TRIM(adm.full_name) <> '';",submit,submitted,4,3,0,False,0.001016,13.34,6886,891
+hints,39,3,simple,False,True,True,True,True,,"SELECT AVG(s.NumTstTakr)
+FROM schools sch
+JOIN satscores s ON sch.CDSCode = s.cds
+WHERE sch.County = 'Fresno'
+  AND strftime('%Y', sch.OpenDate) = '1980';",submit,submitted,3,4,0,False,0.000751,6.26,6272,581
+hints,40,3,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL
+ORDER BY s.AvgScrRead ASC
+LIMIT 1;",submit,submitted,2,1,0,False,0.000743,3.49,3409,399
+schema,24,3,moderate,True,False,False,False,False,,SELECT s.sname FROM frpm f JOIN satscores s ON f.CDSCode = s.cds WHERE f.`Percent (%) Eligible Free (K-12)` > 0.1 AND s.NumGE1500 > 0,submit,submitted,8,12,0,False,0.002839,41.46,22092,5497
+context,32,3,moderate,False,False,False,False,False,,"SELECT f.""School Name"", f.""Percent (%) Eligible FRPM (K-12)""
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f.""FRPM Count (K-12)"" DESC
+LIMIT 5;",submit,submitted,6,12,1,False,0.002223,37.46,30803,3514
+hints,41,3,simple,True,False,False,False,False,max_steps,,,max_steps,8,19,0,False,0.003735,24.22,29743,5143
+dictionary,41,3,simple,True,False,False,False,False,max_steps,,,max_steps,8,17,2,False,0.003259,44.18,54787,5641
+hints,45,3,moderate,False,True,True,True,True,,"SELECT sc.School, ss.AvgScrWrite
+FROM schools sc
+JOIN satscores ss ON ss.cds = sc.CDSCode
+WHERE (sc.AdmFName1 = 'Ricci' AND sc.AdmLName1 = 'Ulrich')
+   OR (sc.AdmFName2 = 'Ricci' AND sc.AdmLName2 = 'Ulrich')
+   OR (sc.AdmFName3 = 'Ricci' AND sc.AdmLName3 = 'Ulrich');",submit,submitted,3,2,0,False,0.000447,4.29,4884,596
+dictionary,45,3,moderate,False,True,True,True,True,,"SELECT s.School, ss.AvgScrWrite
+FROM schools s
+JOIN satscores ss ON s.CDSCode = ss.cds
+WHERE s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich';",submit,submitted,4,3,0,False,0.000663,6.94,20112,579
+hints,46,3,simple,False,False,False,False,False,,"SELECT s.School, f.`Enrollment (K-12)` AS enrollment
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.DOC = '31'
+ORDER BY f.`Enrollment (K-12)` DESC;",submit,submitted,2,1,0,False,0.000461,3.98,3097,342
+hints,47,3,moderate,False,True,True,True,True,,"SELECT COUNT(*) / 12.0 AS monthly_avg FROM schools WHERE County = 'Alameda' AND DOC = '52' AND strftime('%Y', OpenDate) = '1980'",submit,submitted,3,3,0,False,0.00051,3.72,7596,418
+hints,48,3,moderate,True,True,False,True,False,,"SELECT
+  SUM(CASE WHEN DOC='54' THEN 1 ELSE 0 END) * 1.0 / SUM(CASE WHEN DOC='52' THEN 1 ELSE 0 END) AS ratio
+FROM schools
+WHERE County='Orange' AND StatusType='Merged'",submit,submitted,5,6,0,False,0.001156,5.41,9450,847
+dictionary,46,3,simple,False,False,False,False,False,max_steps,,,max_steps,8,15,1,False,0.004499,15.29,47203,3177
+context,37,3,moderate,True,False,False,False,False,max_steps,,,max_steps,8,15,1,False,0.003536,23.59,42458,4267
+context,36,3,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1 || ' ' || sc.AdmLName1 AS full_name
+FROM satscores s
+JOIN schools sc ON sc.CDSCode = s.cds
+WHERE s.rtype = 'S'
+ORDER BY s.NumGE1500 DESC
+LIMIT 1;",submit,submitted,3,2,0,False,0.000707,3.43,11676,584
+dictionary,47,3,moderate,False,True,True,True,True,,"SELECT COUNT(*) * 1.0 / 12 AS avg_monthly FROM schools WHERE County = 'Alameda' AND DOCType = 'Elementary School District' AND strftime('%Y', OpenDate) = '1980';",submit,submitted,2,3,0,False,0.000457,4.82,10473,543
+context,39,3,simple,False,True,True,True,True,,"SELECT AVG(CAST(s.NumTstTakr AS REAL))
+FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.rtype='S' AND sc.County='Fresno'
+AND sc.OpenDate BETWEEN '1980-01-01' AND '1980-12-31'",submit,submitted,2,2,0,False,0.000384,3.92,7669,513
+context,40,3,moderate,False,True,True,True,True,,SELECT sc.Phone FROM satscores sa JOIN schools sc ON sc.CDSCode = sa.cds WHERE sa.dname = 'Fresno Unified' AND sa.rtype = 'S' AND sa.AvgScrRead IS NOT NULL ORDER BY sa.AvgScrRead ASC LIMIT 1;,submit,submitted,4,5,0,False,0.001131,3.54,15553,665
+schema,25,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,17,1,False,0.00643,54.12,24362,8091
+dictionary,48,3,moderate,True,True,False,True,False,,"SELECT
+  (SELECT COUNT(*) FROM schools WHERE StatusType='Merged' AND County='Orange' AND DOCType='Unified School District') * 1.0
+  /
+  (SELECT COUNT(*) FROM schools WHERE StatusType='Merged' AND County='Orange' AND DOCType='Elementary School District') AS ratio",submit,submitted,3,5,0,False,0.00065,21.35,14993,724
+hints,50,3,simple,True,False,False,False,False,,"SELECT sc.School, sc.MailStreet
+FROM satscores sa
+JOIN schools sc ON sa.cds = sc.CDSCode
+WHERE sa.rtype = 'S'
+ORDER BY sa.AvgScrMath DESC
+LIMIT 1 OFFSET 6;",submit,submitted,8,10,0,False,0.009317,31.81,20839,9410
+hints,62,3,challenging,False,True,True,True,True,,"SELECT COUNT(*) FROM frpm
+WHERE `County Name` = 'Los Angeles'
+  AND `Charter School (Y/N)` = 0
+  AND `Free Meal Count (K-12)` * 100 / `Enrollment (K-12)` < 0.18;",submit,submitted,4,5,0,False,0.004579,10.73,9754,3228
+dictionary,50,3,simple,True,False,False,False,False,,"SELECT sc.sname, sch.Street FROM satscores sc JOIN schools sch ON sch.CDSCode = sc.cds WHERE sc.rtype = 'S' ORDER BY sc.AvgScrMath DESC LIMIT 1 OFFSET 6",submit,submitted,5,8,0,False,0.002801,12.71,32251,2138
+hints,72,3,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"")
+FROM frpm f JOIN schools s ON f.CDSCode=s.CDSCode
+WHERE s.City='Fremont' AND s.EdOpsCode='SSS' AND f.""Academic Year""='2014-2015';",submit,submitted,3,3,0,False,0.000931,5.56,6745,407
+dictionary,62,3,challenging,False,False,False,False,False,,SELECT COUNT(*) FROM frpm WHERE `County Name`='Los Angeles' AND `Charter School (Y/N)`=0 AND `Percent (%) Eligible Free (K-12)` < 0.18;,submit,submitted,4,6,0,False,0.002154,7.53,20501,1436
+dictionary,72,3,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"") FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode WHERE s.City = 'Fremont' AND f.""School Type"" = 'State Special Schools' AND f.""Academic Year"" = '2014-2015'",submit,submitted,3,5,1,False,0.001163,4.95,15319,585
+hints,77,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,17,0,False,0.005162,17.43,23412,4741
+hints,79,3,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE Virtual = 'F' AND County IN ('San Diego','Santa Barbara') GROUP BY County ORDER BY num_schools DESC LIMIT 1;",submit,submitted,2,1,0,False,0.000347,0.99,2972,205
+dictionary,77,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,14,1,False,0.003448,15.5,47709,1555
+context,41,3,simple,True,False,False,False,False,,"WITH ranked AS (
+  SELECT s.School AS School,
+         s.County AS County,
+         RANK() OVER (PARTITION BY s.County ORDER BY sa.AvgScrRead DESC) AS rnk
+  FROM schools s
+  JOIN satscores sa ON sa.cds = s.CDSCode AND sa.rtype = 'S'
+  WHERE sa.AvgScrRead IS NOT NULL
+    AND s.Virtual = 'F'
+)
+SELECT DISTINCT School
+FROM ranked
+WHERE rnk <= 5
+ORDER BY School;",submit,submitted,6,13,0,False,0.004157,56.32,35676,6840
+hints,82,3,simple,False,True,True,True,True,,SELECT GSoffered FROM schools WHERE ABS(Longitude) = (SELECT MAX(ABS(Longitude)) FROM schools) AND GSoffered IS NOT NULL;,submit,submitted,3,3,0,False,0.000419,5.94,5043,456
+schema,26,3,moderate,False,False,False,False,False,max_steps,,,max_steps,8,19,0,False,0.006955,53.57,48485,9330
+context,45,3,moderate,False,True,True,True,True,,"SELECT sc.School, sa.AvgScrWrite FROM schools sc JOIN satscores sa ON sa.cds = sc.CDSCode AND sa.rtype = 'S' WHERE sc.AdmLName1 = 'Ulrich' OR sc.AdmLName2 = 'Ulrich' OR sc.AdmLName3 = 'Ulrich'",submit,submitted,5,4,0,False,0.000677,10.63,19509,988
+dictionary,79,3,moderate,False,False,False,False,False,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE Virtual = 'F' AND County IN ('San Diego','Santa Barbara') GROUP BY County ORDER BY num_schools DESC;",submit,submitted,3,3,0,False,0.000299,12.81,15156,443
+dictionary,82,3,simple,False,False,False,False,False,,SELECT GSoffered FROM schools WHERE Longitude = (SELECT MAX(Longitude) FROM schools);,submit,submitted,2,1,0,False,0.000284,3.61,9637,272
+schema,27,3,moderate,False,False,False,False,False,,"SELECT s.School, t.AvgScrWrite, s.Phone
+FROM schools AS s
+JOIN satscores AS t ON s.CDSCode = t.cds
+WHERE s.OpenDate > '1991-12-31' OR s.ClosedDate < '2000-01-01'",submit,submitted,5,7,0,False,0.001339,15.39,14633,1948
+hints,83,3,challenging,True,True,False,True,False,,"SELECT s.City, COUNT(DISTINCT s.CDSCode) AS num_schools
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE s.GSoffered = 'K-8'
+  AND s.Magnet = 1
+  AND f.""NSLP Provision Status"" = 'Multiple Provision Types'
+GROUP BY s.City",submit,submitted,7,7,1,False,0.001938,17.59,14064,2430
+context,46,3,simple,False,False,False,False,False,,"SELECT s.School, f.""Enrollment (K-12)"" AS enrollment
+FROM schools s JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.DOCType = 'State Special Schools'
+ORDER BY f.""Enrollment (K-12)"" DESC
+LIMIT 1;",submit,submitted,4,4,0,False,0.000799,10.64,15048,1308
+hints,85,3,moderate,False,False,False,False,False,,"SELECT f.`District Code`, f.`Free Meal Count (K-12)` / f.`Enrollment (K-12)` * 100 AS `Percent (%) Eligible Free (K-12)` FROM frpm f JOIN schools s ON s.CDSCode = f.CDSCode WHERE s.AdmFName1 = 'Alusine';",submit,submitted,3,2,0,False,0.001698,4.95,5022,805
+context,47,3,moderate,False,True,True,True,True,,"SELECT COUNT(*) / 12.0 AS monthly_avg
+FROM schools
+WHERE County = 'Alameda'
+  AND DOCType = 'Elementary School District'
+  AND strftime('%Y', OpenDate) = '1980'",submit,submitted,3,3,0,False,0.002355,3.69,13333,552
+dictionary,83,3,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) AS num_schools
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE f.""Low Grade"" = 'K' AND f.""High Grade"" = '8'
+  AND f.""NSLP Provision Status"" = 'Multiple Provision Types'
+GROUP BY s.City
+ORDER BY s.City;",submit,submitted,5,6,0,False,0.000641,10.38,26088,901
+hints,87,3,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2 FROM schools WHERE County = 'San Bernardino' AND District = 'San Bernardino City Unified' AND City = 'San Bernardino' AND SOC = 62 AND DOC = 54 AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND AdmEmail1 IS NOT NULL AND AdmEmail2 IS NOT NULL",submit,submitted,3,2,0,False,0.000987,4.92,5356,687
+dictionary,85,3,moderate,False,False,False,False,False,,"SELECT f.`Percent (%) Eligible Free (K-12)`, f.`District Code` FROM frpm f JOIN schools s ON s.CDSCode = f.CDSCode WHERE s.AdmFName1 = 'Alusine' OR s.AdmFName2 = 'Alusine' OR s.AdmFName3 = 'Alusine';",submit,submitted,3,2,0,False,0.001018,4.04,14854,549
+context,48,3,moderate,True,True,False,True,False,,"SELECT CAST(SUM(CASE WHEN ""DOCType"" = 'Unified School District' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN ""DOCType"" = 'Elementary School District' THEN 1 ELSE 0 END) AS ratio FROM schools WHERE County = 'Orange' AND StatusType = 'Merged';",submit,submitted,4,5,0,False,0.000895,12.63,15467,1492
+context,50,3,simple,True,False,False,False,False,,"SELECT sc.School, sc.Street FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode WHERE s.rtype = 'S' ORDER BY s.AvgScrMath DESC LIMIT 1 OFFSET 6",submit,submitted,3,3,0,False,0.000473,2.58,11444,416
+dictionary,87,3,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2 FROM schools WHERE County='San Bernardino' AND District='San Bernardino City Unified' AND SOCType='Intermediate/Middle Schools (Public)' AND DOCType='Unified School District' AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31';",submit,submitted,3,2,0,False,0.000583,10.47,16117,1000
+schema,28,3,challenging,False,False,False,False,False,max_steps,,,max_steps,8,16,0,False,0.007719,26.24,24023,5413
+context,62,3,challenging,False,False,False,False,False,,"SELECT COUNT(*) FROM frpm WHERE ""County Name"" = 'Los Angeles' AND ""Charter School (Y/N)"" = 0 AND ""Percent (%) Eligible Free (K-12)"" < 0.18;",submit,submitted,3,4,0,False,0.002417,6.59,11179,1728
+context,72,3,moderate,False,True,True,True,True,,"SELECT SUM(f.""Enrollment (Ages 5-17)"")
+FROM frpm f JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE f.""Educational Option Type"" = 'State Special School' AND s.City = 'Fremont' AND f.""Academic Year"" = '2014-2015'",submit,submitted,2,2,0,False,0.000261,3.49,7187,378
+context,77,3,moderate,False,False,False,False,False,,"SELECT s.School, f.""Percent (%) Eligible FRPM (Ages 5-17)""
+FROM schools s
+JOIN frpm f ON f.CDSCode = s.CDSCode
+WHERE s.County = 'Los Angeles' AND s.GSserved = 'K-9'
+ORDER BY s.School;",submit,submitted,8,12,0,False,0.00216,12.36,35097,2365
+context,79,3,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC LIMIT 1",submit,submitted,3,3,0,False,0.000326,4.18,10888,466
+schema,31,3,moderate,False,False,False,False,False,,"SELECT `Percent (%) Eligible Free (K-12)`
+FROM frpm
+WHERE `Low Grade` = '1' AND `High Grade` = '12'
+ORDER BY `Enrollment (K-12)` DESC
+LIMIT 2 OFFSET 9;",submit,submitted,4,5,0,False,0.001948,25.71,9522,2788
+context,82,3,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,2,1,0,False,0.000267,2.05,7052,208
+context,83,3,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(DISTINCT s.CDSCode) AS num_schools
+FROM schools s
+JOIN frpm f ON s.CDSCode = f.CDSCode
+WHERE f.""NSLP Provision Status"" = 'Multiple Provision Types'
+  AND s.GSoffered = 'K-8'
+GROUP BY s.City;",submit,submitted,5,6,0,False,0.000815,9.42,19375,784
+schema,32,3,moderate,False,False,False,True,True,,"SELECT f.`Percent (%) Eligible FRPM (K-12)`
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.SOC = '66'
+  AND CAST(f.`Low Grade` AS INTEGER) BETWEEN 1 AND 12
+  AND CAST(f.`High Grade` AS INTEGER) BETWEEN 1 AND 12
+ORDER BY f.`FRPM Count (K-12)` DESC
+LIMIT 5",submit,submitted,5,6,0,False,0.002054,11.32,11634,1933
+context,85,3,moderate,False,False,False,False,False,,"SELECT f.""District Code"", f.""Percent (%) Eligible Free (K-12)""
+FROM frpm f
+JOIN schools s ON s.CDSCode = f.CDSCode
+WHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3);",submit,submitted,3,2,0,False,0.000408,4.04,10730,399
+context,87,3,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2
+FROM schools
+WHERE County = 'San Bernardino'
+  AND District = 'San Bernardino City Unified'
+  AND City = 'San Bernardino'
+  AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31'
+  AND DOCType = 'Unified School District'
+  AND EILName = 'Intermediate/Middle/Junior High';",submit,submitted,4,5,0,False,0.001787,9.42,19417,1209
+schema,37,3,moderate,True,False,False,False,False,,"SELECT T2.Street, T2.City, T2.State, T2.Zip
+FROM satscores AS T1
+INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode
+ORDER BY T1.NumGE1500 / T1.NumTstTakr ASC
+LIMIT 1;",submit,submitted,8,14,0,False,0.004799,59.65,27627,8672
+schema,36,3,challenging,True,False,False,False,False,,"SELECT sc.AdmFName1, sc.AdmLName1
+FROM satscores sa
+JOIN schools sc ON sc.CDSCode = sa.cds
+WHERE sa.rtype = 'S'
+ORDER BY sa.NumGE1500 DESC
+LIMIT 1;",submit,submitted,6,7,0,False,0.001526,15.32,13091,1319
+schema,39,3,simple,False,True,True,True,True,,SELECT AVG(sc.NumTstTakr) FROM schools s JOIN satscores sc ON s.CDSCode = sc.cds WHERE s.County = 'Fresno' AND s.OpenDate >= '1980-01-01' AND s.OpenDate <= '1980-12-31';,submit,submitted,3,4,0,False,0.000739,4.4,6568,529
+schema,40,3,moderate,False,True,True,True,True,,"SELECT sc.Phone
+FROM satscores s JOIN schools sc ON s.cds = sc.CDSCode
+WHERE s.dname = 'Fresno Unified' AND s.AvgScrRead IS NOT NULL
+ORDER BY s.AvgScrRead ASC
+LIMIT 1;",submit,submitted,4,4,0,False,0.000723,5.24,6879,547
+schema,41,3,simple,True,False,False,False,False,max_steps,,,max_steps,8,20,3,False,0.003101,49.71,31957,4545
+schema,45,3,moderate,False,True,True,True,True,,"SELECT s.School, ss.AvgScrWrite FROM schools s JOIN satscores ss ON ss.cds = s.CDSCode WHERE s.AdmFName1='Ricci' AND s.AdmLName1='Ulrich';",submit,submitted,4,5,0,False,0.001208,2.52,6847,707
+schema,46,3,simple,False,True,True,True,True,,SELECT `School Name` FROM frpm WHERE `School Type` = 'State Special Schools' ORDER BY `Enrollment (K-12)` DESC LIMIT 1,submit,submitted,4,7,0,False,0.002666,11.3,7754,1883
+schema,47,3,moderate,False,True,True,True,True,,"SELECT COUNT(*) * 1.0 / 12 AS monthly_avg
+FROM schools
+WHERE County = 'Alameda'
+  AND DOCType = 'Elementary School District'
+  AND OpenDate LIKE '1980%';",submit,submitted,3,6,0,False,0.000611,13.59,5893,657
+schema,48,3,moderate,True,False,False,False,False,max_steps,,,max_steps,8,19,0,False,0.002744,33.96,26017,4184
+schema,50,3,simple,True,False,False,False,False,truncated,,,truncated,5,9,0,False,0.007955,68.93,14673,13269
+schema,62,3,challenging,False,False,False,False,False,,SELECT COUNT(*) AS num_non_charter_schools FROM frpm WHERE `County Name` = 'Los Angeles' AND `Charter School (Y/N)` = 0 AND `Percent (%) Eligible Free (K-12)` < 0.18;,submit,submitted,4,6,0,False,0.001801,6.51,7163,1068
+schema,72,3,moderate,False,True,True,True,True,,"SELECT SUM(f.`Enrollment (Ages 5-17)`)
+FROM frpm f JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`School Type` = 'State Special Schools' AND s.City = 'Fremont';",submit,submitted,3,3,0,False,0.000412,4.97,4949,424
+schema,77,3,moderate,False,False,False,False,False,,"SELECT f.`School Name`, f.`Percent (%) Eligible FRPM (Ages 5-17)` FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode WHERE s.GSserved = 'K-9' AND s.County = 'Los Angeles';",submit,submitted,6,10,0,False,0.001552,11.71,14057,1757
+schema,79,3,moderate,False,True,True,True,True,,"SELECT County, COUNT(*) AS num_schools FROM schools WHERE County IN ('San Diego','Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY num_schools DESC LIMIT 1;",submit,submitted,5,6,0,False,0.001774,9.74,15040,1055
+schema,82,3,simple,False,False,False,False,False,,SELECT GSoffered FROM schools ORDER BY Longitude DESC LIMIT 1;,submit,submitted,5,4,0,False,0.000409,9.08,8069,682
+schema,83,3,challenging,True,False,True,False,True,,"SELECT s.City, COUNT(*) AS num_schools
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE f.`Low Grade` = 'K'
+  AND f.`High Grade` = '8'
+  AND f.`NSLP Provision Status` = 'Multiple Provision Types'
+GROUP BY s.City
+ORDER BY s.City;",submit,submitted,4,4,0,False,0.00099,7.3,7131,796
+schema,85,3,moderate,False,False,False,False,False,,"SELECT `Percent (%) Eligible Free (K-12)`, `District Code` FROM frpm WHERE CDSCode = '19648576108609';",submit,submitted,3,3,1,False,0.0007,1.92,4930,449
+schema,87,3,challenging,False,True,True,True,True,,"SELECT AdmEmail1, AdmEmail2
+FROM schools
+WHERE County = 'San Bernardino'
+  AND City = 'San Bernardino'
+  AND District = 'San Bernardino City Unified'
+  AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31'
+  AND DOCType = 'Unified School District'
+  AND SOCType = 'Intermediate/Middle Schools (Public)'
+  AND AdmEmail1 GLOB '*@*.*' AND AdmEmail1 NOT LIKE '% %'
+  AND AdmEmail2 GLOB '*@*.*' AND AdmEmail2 NOT LIKE '% %';",submit,submitted,4,3,0,False,0.000841,11.49,8664,1392

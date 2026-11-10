@@ -8,7 +8,22 @@ found errors in 52.8% of Mini-Dev. The model is DeepSeek V4.1 Flash, run three t
 
 ## Results
 
-RESULTS_PLACEHOLDER
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/accuracy-dark.svg">
+  <img alt="Execution accuracy for each kind of context, graded against the original and the corrected labels" src="docs/accuracy.svg" width="720">
+</picture>
+
+Grading the same answers against the corrected labels moves the arms in opposite directions. The agent with BIRD's
+hints loses 10 points, because the hints were written for the original queries and following them reproduces those
+queries, mistakes included: on the 9 questions where the two labels disagree, its answers matched the original label
+14 times and the corrected one 5 times. The agent with the context layer gains 4 points and finishes 3 points ahead
+of the schema alone, but 30 questions can't tell that lead from noise (its 95% interval runs from -9 to +17).
+
+The layer changed the agent's SQL far more than its score. Every context-arm answer that used the SAT table dropped
+its district totals, as the audit's corrections do, against 8 to 19% of answers in the other arms. Yet on the ten
+questions where the audit added that filter, the context arm beat the schema arm on only one. The rest turned on
+other details, such as how many of a school's three administrator slots to return, or whether every school tied for
+the lowest rate counts.
 
 ## Setup
 
@@ -18,7 +33,7 @@ hint for each question, which no real user would supply. The `context` arm adds
 [a context layer](context/california_schools.yaml) that I wrote by profiling the database. It is shorter than BIRD's
 dictionary and corrects several things the dictionary gets wrong: it calls the `rtype` column that separates schools
 from district totals "unuseful", it says K-12 enrollment starts at first grade, and its excellence-rate formula
-truncates to zero under SQLite's integer division.
+truncates to zero for most schools under SQLite's integer division.
 
 The original labels are the ones the audit started from. The corrected labels come from the audit's SQL-only
 release, which changes the reference queries but not the questions, so the same answer can be graded against both.
@@ -28,19 +43,22 @@ floats rounded to 10 significant digits, because BIRD's strict version marks 0.9
 
 ## Limitations
 
-Thirty questions on one database is a small sample, and each question is worth 3.3 points. The context layer isn't
-blind: I wrote it after reading the paper and seeing some of these questions, although everything in it comes from
-the data or the state's file documentation rather than from the questions. I changed it once before the main run,
-to fix a false claim about the percentage columns. Some labels also depend on the hint. Question 11 defines total
-enrollment as K-12 plus ages 5-17 enrollment, which counts most students twice, so an agent without the hint can't
-match either label.
+Thirty questions on one database is a small sample. The context layer isn't blind: I wrote it after reading the paper
+and seeing some of these questions, although everything in it comes from the data or the state's file documentation
+rather than from the questions. I changed it once, before either run, to fix a false claim about the percentage
+columns. The first run, in `results/20261110_102042_spike`, gave up on agents still exploring after eight steps,
+which left 12 to 20% of each arm unanswered and put the context layer 3 to 4 points behind the schema alone. The
+second gives them one last call to submit. The hints lost 10 points to the corrected labels in both.
 
 ## Run it
+
+A full run makes about 1,700 model calls and costs about $0.80 on OpenRouter.
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env    # add OPENROUTER_API_KEY
 python -m bench.fetch_data
-python -m bench.run --repeats 3 --label spike
+python -m bench.run --repeats 3 --label main
 python -m bench.report results/<run_dir>
+python -m bench.plot results/<run_dir>
 ```

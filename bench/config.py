@@ -24,7 +24,7 @@ ARMS = {
 }
 
 # Agent limits.
-MAX_STEPS = 8           # LLM calls per question
+MAX_STEPS = 8           # LLM calls per question, plus one last call to submit
 MAX_TOKENS = 8000       # per LLM call, reasoning included
 ROW_CAP = 30            # rows shown to the model per run_sql
 CHAR_CAP = 4000         # characters shown to the model per tool result

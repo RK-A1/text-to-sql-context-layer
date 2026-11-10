@@ -2,6 +2,7 @@
 
 The agent explores with run_sql and ends by calling submit_answer with the one query whose
 result answers the question. The grader re-runs that query, so prose answers are never parsed.
+An agent still exploring after MAX_STEPS calls gets one more call, told to submit its best query.
 """
 
 import csv
@@ -34,6 +35,7 @@ CONTEXT = """
 {context}"""
 
 NUDGE = "Please call submit_answer with the SQL query that answers the question."
+LAST_CALL = "You are out of steps. Call submit_answer now with your best query."
 
 
 def fn(name, description):
@@ -93,9 +95,13 @@ def answer(call, db, system, question, on_call, budget_ok):
     """Run the tool loop for one question. Returns (summary, messages)."""
     messages = [{"role": "system", "content": system}, {"role": "user", "content": question}]
     s = {"final_sql": None, "answer_source": None, "end": None, "steps": 0, "n_sql": 0, "n_failed_sql": 0,
-         "nudged": False, "cost_usd": 0.0, "latency_s": 0.0, "prompt_tokens": 0, "completion_tokens": 0}
+         "nudged": False, "last_call": False, "cost_usd": 0.0, "latency_s": 0.0, "prompt_tokens": 0,
+         "completion_tokens": 0}
 
-    for step in range(1, MAX_STEPS + 1):
+    for step in range(1, MAX_STEPS + 2):
+        if step > MAX_STEPS:  # out of steps: one more call, told to submit its best query now
+            s["last_call"] = True
+            messages.append({"role": "user", "content": LAST_CALL})
         if not budget_ok():
             s["end"] = "spend_cap"
             break
@@ -116,7 +122,7 @@ def answer(call, db, system, question, on_call, budget_ok):
             if meta.get("finish_reason") == "length":
                 s["end"] = "truncated"
                 break
-            if not s["nudged"]:
+            if not s["nudged"] and not s["last_call"]:
                 s["nudged"] = True  # one reminder, reported as a failure mode
                 messages.append({"role": "user", "content": NUDGE})
                 continue

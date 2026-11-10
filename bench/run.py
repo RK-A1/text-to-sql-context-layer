@@ -1,10 +1,10 @@
 """Run the questions through each arm and grade every answer against both reference labels.
 
 Writes to results/<timestamp>_<label>/:
-    run.json           settings, plus checksums of the questions and the context layer used
-    calls.csv          one row per LLM call (rewritten after every call)
-    answers.csv        one row per graded answer (arm, question, repeat)
-    transcripts.jsonl  full message history per answer, for reading failures
+    run.json              settings, plus checksums of the questions and the context layer used
+    calls.csv             one row per LLM call (rewritten after every call)
+    answers.csv           one row per graded answer (arm, question, repeat)
+    transcripts.jsonl.gz  full message history per answer, for reading failures
 
 Spend is a project-wide ledger: every calls.csv under results/ counts toward SPEND_CAP.
 
@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import csv
+import gzip
 import hashlib
 import json
 import os
@@ -89,7 +90,7 @@ class Run:
         with self.lock:
             self.answers.append(row)
             self.save(self.answers, "answers.csv")
-            with (self.dir / "transcripts.jsonl").open("a") as f:
+            with gzip.open(self.dir / "transcripts.jsonl.gz", "at") as f:
                 f.write(json.dumps({k: row[k] for k in ("arm", "id", "repeat")} | {"messages": messages}) + "\n")
 
 
