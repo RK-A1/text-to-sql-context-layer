@@ -1,0 +1,111 @@
+# Context layer: california_schools
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and the California
+# Department of Education (CDE) file layouts that this data comes from.
+
+database: california_schools
+engine: SQLite
+contents: >
+  Three CDE files keyed by the same school code. frpm: enrollment and free or reduced-price
+  meal counts per school, 2014-2015 school year. satscores: SAT results per school and per
+  district. schools: the CDE directory of schools, districts and county offices, closed ones
+  included.
+
+entities:
+  school:
+    key: CDSCode (satscores.cds)
+    format: 14-character text. County (2) + district (5) + school (7).
+    notes:
+      - Identify a school by CDSCode. Names are not unique (1,242 school names belong to two or
+        more schools), so count and group schools by CDSCode, not by name.
+      - The schools table also has one row per district and county office. On those rows School
+        is NULL and CDSCode ends in '0000000' (1,369 rows).
+      - The schools table includes schools that are no longer open; see schools.StatusType.
+  district:
+    key: the first 7 characters of CDSCode
+    name: schools.District, frpm."District Name", satscores.dname
+  county:
+    name: schools.County, frpm."County Name", satscores.cname
+
+joins:
+  - frpm.CDSCode = schools.CDSCode     # one frpm row per school; every row has a match
+  - satscores.cds = schools.CDSCode    # every row has a match
+  - satscores.cds = frpm.CDSCode       # matches 1,747 of the 1,749 school rows
+
+tables:
+  satscores:
+    grain: one row per school or per district; see rtype
+    columns:
+      rtype: >
+        Record type. 'S' = one school (1,749 rows). 'D' = a district total (520 rows; sname is
+        NULL and cds ends in '0000000'). A district row adds up its schools' rows, so any
+        question about schools needs rtype = 'S', or the district totals get counted as well.
+      sname, dname, cname: school, district and county name. sname is NULL on district rows.
+      enroll12: >
+        Enrollment in grade 12. (BIRD's data dictionary says grades 1 to 12; the data says
+        otherwise: in 9-12 high schools it averages 26% of K-12 enrollment.)
+      NumTstTakr: number of students who took the SAT. 0 on 218 rows.
+      AvgScrRead, AvgScrMath, AvgScrWrite: >
+        Average score on each SAT section. NULL when 10 or fewer students took the test
+        (suppressed for privacy).
+      NumGE1500: number of test takers whose total score across the three sections is 1500 or more.
+
+  frpm:
+    grain: one row per school; one school year only ("Academic Year" = '2014-2015')
+    columns:
+      Enrollment (K-12): students from kindergarten through grade 12. Kindergarten is included.
+      Enrollment (Ages 5-17): students aged 5 to 17. Never more than "Enrollment (K-12)".
+      Free Meal Count (K-12), Free Meal Count (Ages 5-17): students eligible for free meals.
+      FRPM Count (K-12), FRPM Count (Ages 5-17): students eligible for free or reduced-price meals (FRPM).
+      Percent (%) Eligible Free / FRPM (K-12 / Ages 5-17): >
+        A fraction from 0 to 1 (not 0 to 100): the matching count divided by the matching
+        enrollment, stored rounded to 15 significant digits. NULL on 50 to 64 rows.
+      School Type: school category, e.g. 'High Schools (Public)'. Same as schools.SOCType on 98% of rows.
+      Educational Option Type: e.g. 'Traditional', 'Continuation School'. Same as schools.EdOpsName on 99.9% of rows.
+      Charter School (Y/N): 1 = charter school, 0 = not.
+      Charter Funding Type: 'Directly funded', 'Locally funded' or 'Not in CS funding model'. Set only for charter schools.
+      Low Grade, High Grade: lowest and highest grade, as text, e.g. 'P' (preschool), 'K', '1' to '12', 'Adult'.
+      School Code: '0000000' on 45 rows that are district offices, not schools.
+
+  schools:
+    columns:
+      StatusType: "'Active' (11,708), 'Closed' (4,518), 'Merged' (1,448) or 'Pending' (12). ClosedDate is set on most closed and merged rows and never on active ones."
+      County, District, School: names. School is NULL on district and county office rows.
+      Street, StreetAbr, City, Zip, State: physical address. Zip may carry the +4 suffix ('94544-1136').
+      MailStreet, MailStrAbr, MailCity, MailZip, MailState: mailing address. Differs from the physical address on 2,989 rows.
+      Phone, Ext, Website: contact details.
+      OpenDate, ClosedDate, LastUpdate: dates stored as text, 'YYYY-MM-DD'.
+      Charter: 1 = charter school, 0 = not.
+      CharterNum: the school's 4-character charter number.
+      FundingType: charter funding ('Directly funded', 'Locally funded', 'Not in CS funding model'). Set on 1,602 of 1,729 charter schools, and on 40 rows with Charter = 0.
+      DOC, DOCType: district ownership code and its name, one name per code ('52' = 'Elementary School District', '31' = 'State Special Schools').
+      SOC, SOCType: school ownership code and its name, one name per code ('66' = 'High Schools (Public)').
+      EdOpsCode, EdOpsName: educational option code and name ('TRAD' = 'Traditional', 'CON' = 'Continuation School', 'SSS' = 'State Special School').
+      EILCode, EILName: instruction level code and name ('ELEM' = 'Elementary', 'HS' = 'High School', 'INTMIDJR' = 'Intermediate/Middle/Junior High', 'ELEMHIGH' = 'Elementary-High Combination', 'UG' = 'Ungraded', 'A' = 'Adult', 'PS' = 'Preschool').
+      GSoffered: the grade span the school offers.
+      GSserved: the grade span it actually enrolled (K-12 only). Differs from GSoffered on 2,487 rows.
+      Virtual: "'F' = exclusively virtual, 'V' = primarily virtual, 'C' = primarily classroom, 'N' = not virtual, 'P' = partial virtual (a retired code). This data has only 'F', 'P' and 'N'."
+      Magnet: 1 = magnet school or program, 0 = not.
+      Latitude, Longitude: location in degrees.
+      AdmFName1, AdmLName1, AdmEmail1 (and ...2, ...3): up to three administrators (superintendent or principal). Filled only for active and pending rows.
+      NCESDist, NCESSchool: federal (NCES) district and school IDs.
+
+metrics:
+  sat_excellence_rate:
+    sql: CAST(NumGE1500 AS REAL) / NumTstTakr
+    from: satscores, rtype = 'S' for schools
+  free_meal_rate:
+    sql: CAST("Free Meal Count (K-12)" AS REAL) / "Enrollment (K-12)"
+    note: use the (Ages 5-17) columns for the ages 5-17 rate
+  frpm_rate:
+    sql: CAST("FRPM Count (K-12)" AS REAL) / "Enrollment (K-12)"
+    note: use the (Ages 5-17) columns for the ages 5-17 rate
+
+sqlite_notes:
+  - Dividing one integer by another truncates (NumGE1500 / NumTstTakr is 0 for most schools). Cast to REAL first.
+  - Column names with spaces or symbols need double quotes or backticks, e.g. "Enrollment (K-12)".
+  - Dates are text. strftime('%Y', OpenDate) gives the year; compare whole dates as 'YYYY-MM-DD' strings.

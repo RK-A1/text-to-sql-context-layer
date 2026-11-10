@@ -1,0 +1,5 @@
+litellm>=1.104
+pandas
+python-dotenv
+rich
+tabulate

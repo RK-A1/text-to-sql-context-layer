@@ -1,0 +1,65 @@
+"""Summarise one or more runs: accuracy per arm under each label, and where the two labels disagree.
+
+EX is execution accuracy with floats compared to 10 significant digits; "strict" is BIRD's own
+comparison (exact floats). See bench/grade.py.
+
+Usage:
+    python -m bench.report results/<run_dir> [results/<another_run_dir> ...]
+"""
+
+import argparse
+from pathlib import Path
+
+import pandas as pd
+
+from .config import ARMS
+
+
+def pct(s):
+    return s.mean().mul(100).round(1)
+
+
+def summarise(df):
+    g = df.groupby("arm", sort=False)
+    table = pd.DataFrame({
+        "answers": g.size(),
+        "EX original label": pct(g["correct_original_tol"]),
+        "EX corrected label": pct(g["correct_corrected_tol"]),
+        "strict, original": pct(g["correct_original"]),
+        "strict, corrected": pct(g["correct_corrected"]),
+        "no answer": g["final_sql"].apply(lambda s: s.isna().sum()),
+        "cost per answer ($)": g["cost_usd"].mean().round(5),
+        "total cost ($)": g["cost_usd"].sum().round(4),
+    })
+    return table.reindex([a for a in ARMS if a in table.index])
+
+
+def disagreements(df):
+    """On questions whose two labels give different answers: which label each answer matched."""
+    d = df[df["keys_disagree"]]
+    if d.empty:
+        return pd.DataFrame()
+    o, c = d["correct_original_tol"], d["correct_corrected_tol"]
+    out = pd.DataFrame({"arm": d["arm"], "answers": 1, "matched original only": o & ~c,
+                        "matched corrected only": ~o & c, "matched neither": ~o & ~c})
+    out = out.groupby("arm", sort=False).sum().astype(int)
+    return out.reindex([a for a in ARMS if a in out.index])
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("run_dirs", type=Path, nargs="+")
+    args = p.parse_args()
+    df = pd.concat(pd.read_csv(d / "answers.csv", dtype={"id": str}) for d in args.run_dirs)
+    text = "\n".join([
+        f"# {', '.join(d.name for d in args.run_dirs)}\n",
+        "## Execution accuracy by arm (%)\n", summarise(df).to_markdown(), "",
+        f"## The {df.loc[df.keys_disagree, 'id'].nunique()} questions whose two labels give different answers\n",
+        disagreements(df).to_markdown(), "",
+    ])
+    (args.run_dirs[-1] / "summary.md").write_text(text)
+    print(text)
+
+
+if __name__ == "__main__":
+    main()

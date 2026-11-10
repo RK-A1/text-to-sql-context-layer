@@ -1,0 +1,7 @@
+.env
+data/
+__pycache__/
+.DS_Store
+# smoke tests (their spend still counts in the ledger)
+results/*_smoke/
+results/*.log
