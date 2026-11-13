@@ -1,0 +1,75 @@
+# Context layer: superhero
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: superhero
+engine: SQLite
+contents: >
+  750 comic-book characters with their publisher, physical traits, six numeric attributes and
+  their list of superpowers. Most descriptive fields are ids into small lookup tables.
+
+entities:
+  superhero:
+    key: superhero.id (1 to 756, with gaps)
+    notes:
+      - superhero_name is not unique (743 names for 750 rows; e.g. 4 rows are 'Atlas'). Count and
+        group heroes by id, not by name.
+      - full_name is the character's civilian name. It is NULL on 122 rows and '-' on 125 more.
+
+joins:
+  - superhero.publisher_id = publisher.id
+  - superhero.gender_id = gender.id
+  - superhero.alignment_id = alignment.id
+  - superhero.race_id = race.id
+  - superhero.eye_colour_id = colour.id     # colour is one table shared by eyes, hair and skin;
+  - superhero.hair_colour_id = colour.id    # join it once per role, with a different alias each time
+  - superhero.skin_colour_id = colour.id
+  - hero_power.hero_id = superhero.id; hero_power.power_id = superpower.id      # many-to-many
+  - hero_attribute.hero_id = superhero.id; hero_attribute.attribute_id = attribute.id
+
+tables:
+  superhero:
+    columns:
+      height_cm, weight_kg: >
+        Height in centimetres and weight in kilograms. Missing values are stored as NULL or as 0
+        (height: 58 NULL, 155 zero; weight: 64 NULL, 172 zero), so exclude both when averaging or
+        ranking. A few are huge on purpose (Godzilla: 10,800 cm, 90,000,000 kg).
+      race_id: race '-' (id 1) means unknown, on 295 heroes. NULL on 4.
+      publisher_id: publisher id 1 has an empty name ('') and stands for unknown (17 heroes). NULL on 3.
+      alignment_id: NULL on 6.
+  publisher:
+    columns:
+      publisher_name: "e.g. 'Marvel Comics' (387 heroes), 'DC Comics' (224), 'Dark Horse Comics', 'NBC - Heroes'."
+  gender:
+    values: "1 = 'Male' (519 heroes), 2 = 'Female' (203), 3 = 'N/A' (28)."
+  alignment:
+    values: "1 = 'Good' (504 heroes), 2 = 'Bad' (212), 3 = 'Neutral' (28), 4 = 'N/A' (unused)."
+  colour:
+    notes:
+      - "Id 1 is 'No Colour', which stands for none or unknown: 169 heroes' eyes, 246 heroes' hair and
+        681 heroes' skin."
+      - Some colours are combinations, e.g. 'Brown/White', 'Strawberry Blond'.
+  attribute:
+    values: "Six attributes: 'Intelligence', 'Strength', 'Speed', 'Durability', 'Power', 'Combat'."
+  hero_attribute:
+    grain: one row per hero per attribute
+    notes:
+      - attribute_value runs from 5 to 100 in steps of 5.
+      - 623 heroes have all six attributes; the other 127 have none.
+  superpower:
+    columns:
+      power_name: 167 powers, e.g. 'Agility', 'Super Strength', 'Flight'.
+  hero_power:
+    grain: one row per hero per power, no duplicates
+    notes:
+      - 652 heroes have at least one power; 98 have none listed.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Look names up through the lookup tables (e.g. publisher_name = 'Marvel Comics') rather than
+    hard-coding ids.

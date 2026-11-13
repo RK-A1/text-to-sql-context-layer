@@ -1,0 +1,124 @@
+# Context layer: formula_1
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: formula_1
+engine: SQLite
+contents: >
+  Formula One World Championship history from 1950 to 2017: seasons, races, circuits,
+  drivers, constructors (teams), race results, qualifying, championship standings, and for
+  recent years lap-by-lap times and pit stops.
+
+coverage:
+  - races, results and driverStandings cover 1950 to 2017.
+  - qualifying covers 1994 to 2017; lapTimes 1996 to 2017; pitStops 2011 to 2017.
+  - results.fastestLap, fastestLapTime, fastestLapSpeed and rank are filled from 2004 only.
+  - Earlier rows simply don't exist (or are NULL), so a question about, say, pit stops in 2005 has no data.
+
+entities:
+  race:
+    key: races.raceId
+    notes:
+      - A race is one Grand Prix in one season. races.year is the season, races.round its order in the season.
+      - races.name ('Australian Grand Prix') repeats every year; identify a race by raceId or by name + year.
+  driver:
+    key: drivers.driverId
+    notes:
+      - Full name is forename || ' ' || surname, e.g. 'Lewis Hamilton'. Names keep accents ('Óscar', 'Étancelin').
+      - drivers.code (e.g. 'HAM') and drivers.number (permanent car number) are NULL for most older drivers.
+  constructor:
+    key: constructors.constructorId (the team, e.g. 'McLaren', 'Ferrari')
+
+joins:
+  - races.circuitId = circuits.circuitId
+  - results.raceId = races.raceId; results.driverId = drivers.driverId; results.constructorId = constructors.constructorId
+  - results.statusId = status.statusId
+  - qualifying, lapTimes, pitStops, driverStandings join races and drivers on raceId and driverId
+  - constructorResults, constructorStandings join races and constructors on raceId and constructorId
+  - "Some standings and constructorResults rows point to 22 raceIds that are missing from races; an inner join drops them."
+
+tables:
+  results:
+    grain: one row per driver per race
+    columns:
+      grid: starting position. 0 means no grid slot, mostly drivers who did not qualify or withdrew.
+      position: finishing position, NULL when the driver was not classified.
+      positionText: "Position as text, or a code when position is NULL: 'R' = retired, 'D' = disqualified, 'E' = excluded, 'W' = withdrew, 'F' = failed to qualify, 'N' = not classified."
+      positionOrder: finishing order for every entrant, never NULL.
+      points: championship points scored in this race.
+      laps: laps completed.
+      time: >
+        Text. The winner's total race time ('1:31:18.555'); every other lead-lap finisher's gap
+        to the winner ('+19.570'). NULL for drivers who were lapped or did not finish. Use
+        milliseconds to compare or add up race times.
+      milliseconds: total race time in milliseconds, for lead-lap finishers only.
+      statusId: >
+        How the race ended, via status.status: 'Finished' (1) means finished on the lead lap;
+        '+1 Lap', '+2 Laps', ... mean finished but lapped; anything else ('Engine',
+        'Accident', 'Disqualified', 'Did not qualify', ...) means the driver did not finish.
+      fastestLap: lap number of the driver's fastest lap (2004 onward).
+      fastestLapTime: that lap's time as text 'M:SS.mmm' (2004 onward).
+      fastestLapSpeed: that lap's average speed in km/h, stored as TEXT; CAST(... AS REAL) before comparing or sorting.
+      rank: rank of the driver's fastest lap among all drivers in the race; 1 = fastest lap of the race. 0 on 128 rows.
+  qualifying:
+    columns:
+      position: qualifying position.
+      q1, q2, q3: >
+        Best lap time in each qualifying session as text, usually 'M:SS.mmm'. Drivers knocked
+        out earlier have NULL or '' in later sessions. There is no milliseconds column here.
+  lapTimes:
+    grain: one row per driver per lap of a race (400,524 rows)
+    columns:
+      position: the driver's position at the end of that lap.
+      time: lap time as text 'M:SS.mmm'.
+      milliseconds: lap time in milliseconds. Use this, not time, to compare or average.
+  pitStops:
+    grain: one row per pit stop
+    columns:
+      stop: 1 for the driver's first stop in the race, 2 for the second, ...
+      lap: the lap of the stop.
+      time: time of day of the stop, 'HH:MM:SS'.
+      duration: time spent in the pit lane in seconds, as TEXT ('22.552').
+      milliseconds: the same duration in milliseconds.
+  driverStandings:
+    grain: the championship table after each race
+    columns:
+      points: >
+        The driver's season total so far, after this race (it never decreases within a season),
+        not the points scored in this race. A season's final standings are the rows for its
+        last race (the highest round of that year).
+      position: championship position after this race.
+      wins: wins so far this season.
+  constructorStandings:
+    grain: the constructors' championship table after each race; points and wins are season totals so far
+  constructorResults:
+    grain: points scored by one constructor in one race
+    columns:
+      status: "'D' (17 rows) = disqualified; NULL otherwise."
+  races:
+    columns:
+      date: "'YYYY-MM-DD'."
+      time: start time 'HH:MM:SS'. NULL for every race before 2005 (722 races).
+  circuits:
+    columns:
+      location, country: city and country, e.g. 'Kuala Lumpur', 'Malaysia'.
+      lat, lng: coordinates.
+      alt: always NULL.
+  status:
+    columns:
+      status: text of statusId, e.g. 'Finished', '+1 Lap', 'Engine', 'Accident', 'Collision', 'Disqualified'.
+
+metrics:
+  lap_time_seconds_from_text: >
+    For a 'M:SS.mmm' text time t: CAST(substr(t, 1, instr(t, ':') - 1) AS INTEGER) * 60
+    + CAST(substr(t, instr(t, ':') + 1) AS REAL)
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Times stored as text don't sort as times ('10:32.179' < '9:45.712'); use milliseconds or convert first.
+  - Dates are text 'YYYY-MM-DD'; strftime('%Y', dob) gives a year.

@@ -1,0 +1,100 @@
+# Context layer: european_football_2
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: european_football_2
+engine: SQLite
+contents: >
+  European club football (soccer), seasons 2008/2009 to 2015/2016: 25,979 league matches in 11
+  countries' top leagues, 299 teams, 11,060 players, and FIFA video-game ratings for players
+  (183,978 dated snapshots) and teams (1,458).
+
+entities:
+  player:
+    key: Player.player_api_id
+    notes:
+      - Match and Player_Attributes refer to players by player_api_id, not by Player.id.
+      - player_name is not unique (10,848 names for 11,060 players).
+  team:
+    key: Team.team_api_id
+    notes:
+      - Match and Team_Attributes refer to teams by team_api_id, not by Team.id.
+      - team_long_name is the full name ('KRC Genk'); team_short_name a 3-letter code ('GEN').
+        Neither is unique (3 long names belong to two teams each).
+  league:
+    key: League.id. Each country has one league, and League.id equals its country_id.
+
+joins:
+  - Match.home_team_api_id = Team.team_api_id; Match.away_team_api_id = Team.team_api_id   # join Team twice
+  - Match.league_id = League.id; Match.country_id = Country.id; League.country_id = Country.id
+  - Match.home_player_1 ... home_player_11, away_player_1 ... away_player_11 = Player.player_api_id
+  - Player_Attributes.player_api_id = Player.player_api_id
+  - Team_Attributes.team_api_id = Team.team_api_id
+
+tables:
+  Match:
+    grain: one league match
+    columns:
+      season: "'2008/2009' to '2015/2016'."
+      stage: matchday within the season, 1 to 38.
+      date: "Text 'YYYY-MM-DD 00:00:00'. Use date(date) or substr(date, 1, 10), or LIKE '2010-%' for a year."
+      home_team_goal, away_team_goal: >
+        Goals scored. A home win is home_team_goal > away_team_goal, a draw is equality,
+        an away win is home_team_goal < away_team_goal.
+      home_player_1 ... away_player_11: the 11 starting players of each side (player_api_id). NULL on some matches.
+      home_player_X1 ... away_player_Y11: each starter's position in the formation grid (X across, Y up the pitch). Not ids.
+      goal, shoton, shotoff, foulcommit, card, cross, corner, possession: >
+        Match events as XML text, e.g. '<goal><value>...<player1>37799</player1>...'. Filled
+        only for some leagues: nearly every match in England, Germany, Italy and Spain, most
+        of France, few or none elsewhere. NULL on 11,762 matches.
+      B365H, B365D, B365A (and BW, IW, LB, PS, WH, SJ, VC, GB, BS): >
+        Betting odds for a home win (H), draw (D) and away win (A) from bookmakers: B365 = Bet365,
+        BW = Bet&Win, IW = Interwetten, LB = Ladbrokes, PS = Pinnacle, WH = William Hill,
+        SJ = Stan James, VC = VC Bet, GB = Gamebookers, BS = Blue Square. Often NULL.
+  League:
+    values: >
+      'Belgium Jupiler League', 'England Premier League', 'France Ligue 1', 'Germany 1. Bundesliga',
+      'Italy Serie A', 'Netherlands Eredivisie', 'Poland Ekstraklasa', 'Portugal Liga ZON Sagres',
+      'Scotland Premier League', 'Spain LIGA BBVA', 'Switzerland Super League'.
+  Player:
+    columns:
+      birthday: "Text 'YYYY-MM-DD 00:00:00'. An earlier birthday means an older player."
+      height: centimetres (157 to 208).
+      weight: pounds, not kilograms (117 to 243; 168 on average).
+  Player_Attributes:
+    grain: >
+      One FIFA rating snapshot per player per date, 2 to 56 snapshots per player (2007 to 2016).
+      A player has many rows, so say which snapshot you mean: the latest (MAX(date)), one in a
+      given year, or an average over all of them.
+    columns:
+      overall_rating, potential: 0 to 100; higher is better. NULL on 836 rows.
+      crossing ... gk_reflexes: skill scores, 0 to 100.
+      preferred_foot: "'right' or 'left'."
+      attacking_work_rate, defensive_work_rate: >
+        Valid values are 'low', 'medium' and 'high'. Both columns also hold junk from the
+        source ('None', 'norm', 'y', 'le', 'stoc', '_0', 'o', 'ormal', 'tocky', digits, ...).
+      date: "Text 'YYYY-MM-DD 00:00:00'."
+  Team_Attributes:
+    grain: one FIFA tactics snapshot per team per date (6 dates, 2010 to 2015)
+    columns:
+      buildUpPlaySpeed ... defenceTeamWidth: scores from 20 to 80.
+      "...Class": >
+        The score's band: buildUpPlaySpeedClass 'Slow' / 'Balanced' / 'Fast',
+        buildUpPlayDribblingClass 'Little' / 'Normal' / 'Lots', buildUpPlayPassingClass
+        'Short' / 'Mixed' / 'Long', chanceCreationPassingClass 'Safe' / 'Normal' / 'Risky',
+        chanceCreationCrossingClass and chanceCreationShootingClass 'Little' / 'Normal' / 'Lots',
+        defencePressureClass 'Deep' / 'Medium' / 'High', defenceAggressionClass 'Contain' /
+        'Press' / 'Double', defenceTeamWidthClass 'Narrow' / 'Normal' / 'Wide'.
+      buildUpPlayPositioningClass, chanceCreationPositioningClass: "'Organised' or 'Free Form'."
+      defenceDefenderLineClass: "'Cover' or 'Offside Trap'."
+      buildUpPlayDribbling: NULL on 969 of 1,458 rows.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Every date column is text with a ' 00:00:00' suffix; compare with date(x) or a 'YYYY-MM-DD' prefix.
+  - Team is joined twice for a match (home and away); use two aliases.

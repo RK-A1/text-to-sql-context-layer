@@ -6,11 +6,24 @@ ROOT = Path(__file__).resolve().parent.parent  # the repo root
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = ROOT / "results"
 
-DB_ID = "california_schools"
-DB_PATH = DATA_DIR / DB_ID / f"{DB_ID}.sqlite"
-DICTIONARY_DIR = DATA_DIR / DB_ID / "database_description"
+# All eleven BIRD Mini-Dev databases.
+DBS = ["california_schools", "card_games", "codebase_community", "debit_card_specializing", "european_football_2",
+       "financial", "formula_1", "student_club", "superhero", "thrombosis_prediction", "toxicology"]
 QUESTIONS = DATA_DIR / "questions.json"
-CONTEXT_LAYER = ROOT / "context" / f"{DB_ID}.yaml"
+CHECKSUMS = ROOT / "bench" / "checksums.json"  # sha256 of every file fetched from BIRD
+
+
+def db_path(db):
+    return DATA_DIR / db / f"{db}.sqlite"
+
+
+def dictionary_dir(db):
+    return DATA_DIR / db / "database_description"
+
+
+def context_layer(db):
+    return ROOT / "context" / f"{db}.yaml"
+
 
 # One cheap model. BIRD's 2026 baseline puts it at 61% on Mini-Dev (SQLite), so there is room to improve.
 MODEL = "openrouter/deepseek/deepseek-v4.1-flash"
@@ -19,8 +32,7 @@ MODEL = "openrouter/deepseek/deepseek-v4.1-flash"
 ARMS = {
     "schema": "table definitions only",
     "dictionary": "plus BIRD's data dictionary, as shipped with the database",
-    "hints": "plus BIRD's hint for this question (the 'evidence' field)",
-    "context": "plus the context layer in context/california_schools.yaml",
+    "context": "plus the context layer in context/<db>.yaml",
 }
 
 # Agent limits.
@@ -31,4 +43,4 @@ CHAR_CAP = 4000         # characters shown to the model per tool result
 SQL_TIMEOUT_S = 30      # per query; BIRD's evaluation script uses 30 s too
 
 # Hard stop for the whole project, in USD: every calls.csv under results/ counts toward it.
-SPEND_CAP = 5.0
+SPEND_CAP = 10.0

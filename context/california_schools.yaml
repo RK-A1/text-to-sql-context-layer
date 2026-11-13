@@ -67,9 +67,9 @@ tables:
       School Type: school category, e.g. 'High Schools (Public)'. Same as schools.SOCType on 98% of rows.
       Educational Option Type: e.g. 'Traditional', 'Continuation School'. Same as schools.EdOpsName on 99.9% of rows.
       Charter School (Y/N): 1 = charter school, 0 = not.
-      Charter Funding Type: 'Directly funded', 'Locally funded' or 'Not in CS funding model'. Set only for charter schools.
+      Charter Funding Type: "'Directly funded', 'Locally funded' or 'Not in CS funding model'. Set only for charter schools."
       Low Grade, High Grade: lowest and highest grade, as text, e.g. 'P' (preschool), 'K', '1' to '12', 'Adult'.
-      School Code: '0000000' on 45 rows that are district offices, not schools.
+      School Code: "'0000000' on 45 rows that are district offices, not schools."
 
   schools:
     columns:

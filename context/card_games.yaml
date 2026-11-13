@@ -1,0 +1,93 @@
+# Context layer: card_games
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: card_games
+engine: SQLite
+contents: >
+  Magic: The Gathering cards up to early 2021 (from MTGJSON): every printing of every card,
+  the sets they were printed in, which play formats allow them, official rulings, and
+  translations of card and set names.
+
+entities:
+  card printing:
+    key: cards.uuid (cards.id is a row number; other tables join on uuid)
+    notes:
+      - A row in cards is one printing of a card in one set, not one card. The same name appears
+        in many sets (21,738 names for 56,822 rows) and sometimes several times in one set
+        (alternate art, promos). Count distinct cards with COUNT(DISTINCT name).
+      - Cards with two or more faces have one row per face. name holds the whole card
+        ('Dusk // Dawn'), faceName the face ('Dusk'), side the face letter ('a', 'b').
+  set:
+    key: sets.code, e.g. '10E' (Tenth Edition), 'ZNR' (Zendikar Rising). cards.setCode refers to it.
+
+joins:
+  - cards.setCode = sets.code
+  - legalities.uuid = cards.uuid       # one row per card printing per format
+  - rulings.uuid = cards.uuid          # many rulings per printing
+  - foreign_data.uuid = cards.uuid     # one row per printing per language
+  - set_translations.setCode = sets.code
+
+tables:
+  cards:
+    columns:
+      name, artist: the card's English name and the illustrator.
+      rarity: "'common', 'uncommon', 'rare', 'mythic'."
+      colors: >
+        The card's colours as a comma-separated list of letters: W = white, U = blue,
+        B = black, R = red, G = green, e.g. 'G,W'. NULL for colourless cards. To test for one
+        colour use LIKE '%U%'; colorIdentity is the same kind of list.
+      manaCost: text such as '{5}{W}{W}'.
+      convertedManaCost: total mana value as a number. One joke card ('Gleemax') has 1000000.
+      type: the full type line, e.g. 'Creature — Human Cleric' (with an em dash).
+      types, subtypes, supertypes: >
+        Comma-separated lists, e.g. types 'Artifact,Creature', subtypes 'Human,Cleric',
+        supertypes 'Legendary' or 'Basic'. Match one with LIKE.
+      power, toughness: TEXT, mostly digits but also '*', '1+*', '0.5', '?', '∞'. NULL for non-creatures.
+      loyalty: planeswalker loyalty, TEXT.
+      text: rules text in current (Oracle) wording; originalText is the text as printed.
+      flavorText: the italic story text, English.
+      layout: "'normal' (54,906) or a multi-part layout: 'transform', 'modal_dfc', 'adventure', 'split', 'aftermath', 'flip', 'meld', ..."
+      borderColor: "'black', 'white', 'gold', 'silver', 'borderless'."
+      frameVersion: "Text: '1993', '1997', '2003', '2015' or 'future'."
+      frameEffects: comma-separated, e.g. 'legendary', 'extendedart', 'showcase'.
+      availability: "Where the printing exists, comma-separated: 'paper', 'mtgo' (Magic Online), 'arena', plus rare 'shandalar' and 'dreamcast'."
+      keywords: comma-separated keyword abilities, e.g. 'Flying', 'First strike,Flash'.
+      isPromo, isReprint, isOnlineOnly, isFullArt, isTextless, isOversized, isStarter, isReserved, isAlternative, isTimeshifted, isStorySpotlight, hasFoil, hasNonFoil, hasContentWarning: 1 = yes, 0 = no.
+      originalReleaseDate: "Text 'YYYY/M/D' (e.g. '2012/12/1'), not ISO, so it doesn't sort as a date. Set on only 2,065 printings, mostly promos; for the rest use the set's releaseDate."
+      number: collector number within the set, TEXT ('1', '7', '*112').
+      edhrecRank: popularity rank on EDHREC; 1 is the most popular.
+      printings: comma-separated list of every set code the card was printed in.
+  sets:
+    columns:
+      name, code: e.g. 'Tenth Edition' / '10E'.
+      releaseDate: "'YYYY-MM-DD', 1993 to 2021."
+      type: "'expansion', 'core', 'masters', 'promo', 'commander', 'duel_deck', 'box', 'funny', ..."
+      block: the block the set belongs to, e.g. 'Zendikar'. NULL for half the sets.
+      baseSetSize, totalSetSize: number of cards in the main set, and including extras.
+      isFoilOnly, isNonFoilOnly, isOnlineOnly, isForeignOnly: 1 = yes, 0 = no.
+  legalities:
+    columns:
+      format: "'vintage', 'legacy', 'commander', 'duel', 'modern', 'penny', 'pauper', 'pioneer', 'premodern', 'historic', 'gladiator', 'standard', 'future', 'brawl', 'oldschool'."
+      status: "'Legal', 'Banned' or 'Restricted'. A printing with no row for a format is not legal in it."
+  rulings:
+    columns:
+      date: "'YYYY-MM-DD'."
+      text: the ruling. The same ruling is repeated for each printing of a card.
+  foreign_data:
+    columns:
+      language: "'Japanese', 'French', 'German', 'Italian', 'Spanish', 'Portuguese (Brazil)', 'Chinese Simplified', 'Russian', 'Chinese Traditional', 'Korean', and a handful in 'Phyrexian', 'Latin', 'Hebrew', ..."
+      name, text, type, flavorText: the card in that language. Missing values are '' rather than NULL.
+  set_translations:
+    columns:
+      language: 10 languages, the same as foreign_data's main ones.
+      translation: the set's name in that language. NULL on 231 rows. Only 121 of the 551 sets have translations.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - The list columns (colors, types, subtypes, keywords, availability, ...) are text; use LIKE, not =, to test for one member.

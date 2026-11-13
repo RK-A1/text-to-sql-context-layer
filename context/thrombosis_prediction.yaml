@@ -1,0 +1,86 @@
+# Context layer: thrombosis_prediction
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: thrombosis_prediction
+engine: SQLite
+contents: >
+  A Japanese university hospital's collagen-disease patients (1,238), their special
+  examinations for thrombosis (106 rows) and their routine laboratory tests (13,908 rows,
+  1981 to 1999).
+
+entities:
+  patient:
+    key: Patient.ID (integer)
+    notes:
+      - Examination and Laboratory refer to patients by the same ID.
+      - Examination.ID is NULL on 36 of its 106 rows; those examinations belong to no known patient.
+      - Only 20 patients have both examination and laboratory rows. 302 patients have laboratory rows.
+
+joins:
+  - Examination.ID = Patient.ID        # 0 to 2 examinations per patient
+  - Laboratory.ID = Patient.ID         # up to 226 test dates per patient; one row per patient per date
+
+tables:
+  Patient:
+    columns:
+      SEX: "'F' (1,023), 'M' (202), or '' (13, unknown)."
+      Birthday: "'YYYY-MM-DD'. NULL on 1. Seven patients have a Birthday after their First Date, e.g. 2007-05-28 for a 1997 visit."
+      Description: date the patient's record was first made, 'YYYY-MM-DD'. NULL on 216.
+      First Date: date the patient first came to the hospital, 'YYYY-MM-DD'. NULL on 251.
+      Admission: "'+' = admitted to hospital (488), '-' = followed as an outpatient (713). Also '' (34) and '+(' (3)."
+      Diagnosis: >
+        Free text. Several diagnoses are joined with ', ' and 'susp' marks a suspected one, e.g.
+        'SLE, SJS' or 'RA susp'. Only 195 of the 309 patients whose diagnosis mentions SLE have
+        exactly 'SLE', so match with LIKE '%SLE%' unless you want the single diagnosis.
+        Abbreviations: SLE = systemic lupus erythematosus, SJS = Sjogren's syndrome,
+        RA = rheumatoid arthritis, BEHCET = Behcet's disease, PSS = progressive systemic
+        sclerosis, MCTD = mixed connective tissue disease, APS = antiphospholipid syndrome.
+  Examination:
+    columns:
+      Examination Date: "'YYYY-MM-DD', 1992 to 1998. NULL on 4."
+      Diagnosis: Same abbreviations as Patient.Diagnosis but not always the same case ('SjS', 'Behcet'). LIKE is case-insensitive.
+      Thrombosis: "Degree of thrombosis: 0 = none (94 rows), 1 = most severe (8), 2 = severe (3), 3 = mild (1)."
+      aCL IgG, aCL IgM, aCL IgA: anti-cardiolipin antibody concentrations.
+      ANA: anti-nuclear antibody titre, one of 0, 4, 16, 64, 256, 1024, 4096. NULL on 19.
+      ANA Pattern: "Letters for the staining pattern, comma-separated when there are several: 'S', 'P', 'P,S', 'S,P', 'S,D', 'D,P,S'."
+      KCT, RVVT, LAC: "Coagulation tests: '+' = positive, '-' = negative. NULL on most rows."
+      Symptoms: free text, NULL on 94 of 106 rows.
+  Laboratory:
+    grain: one row per patient per test date. Most tests are NULL on most rows.
+    columns:
+      Date: "'YYYY-MM-DD' (BIRD's dictionary says YYMMDD; the data is ISO), 1981-01-27 to 1999-03-04."
+      numeric tests: >
+        Stored as numbers. Normal ranges: GOT < 60, GPT < 60, LDH < 500, ALP < 300,
+        TP 6.0 to 8.5, ALB 3.5 to 5.5, UN < 30, CRE < 1.5, T-BIL < 2.0, T-CHO < 250, TG < 200,
+        CPK < 250, GLU < 180, WBC 3.5 to 9.0, RBC 3.5 to 6.0, HGB 10 to 17, HCT 29 to 52,
+        PLT 100 to 400, PT < 14, APTT < 45, IGG 900 to 2000, IGA 80 to 500, IGM 40 to 400,
+        C3 > 35, C4 > 10.
+      UA: >
+        Uric acid. Normal is below 8.0 for men and below 6.5 for women; higher is
+        hyperuricemia. (BIRD's dictionary prints this as 'N > 8.0', which reads backwards.)
+      FG: >
+        Fibrinogen. BIRD's dictionary gives a normal range of 150 to 450, but every stored value
+        is between 23.8 and 106.5, so the stored unit differs from that range.
+      PIC, TAT, TAT2: coagulation markers with no description in BIRD's dictionary.
+      CRP: >
+        C-reactive protein, stored as TEXT that mixes numbers ('0.6') with '-', '+', '2+' to
+        '5+' and '<0.3'-style values. Normal is '-', '+-' or a number below 1.0. Cast numbers
+        with CAST(CRP AS REAL) only after excluding the non-numeric values.
+      U-PRO: "Urine protein, TEXT: numbers, '-', 'TR' (trace), '+1(30)', '>=300', '>=1000'. Normal is 0 to 30."
+      RA: "Rheumatoid factor screen, TEXT: '-', '+-', '+', '2+' (one '7-'). Normal is '-' or '+-'."
+      RF: "Rheumatoid factor (RAHA), TEXT: numbers and '<40'-style values. Normal is below 20."
+      RNP, SM, SC170, SSA, SSB, CENTROMEA: "Autoantibody titres, TEXT. Both '0' and 'negative' mean negative; other values are titres such as '4', '16', '64'."
+      DNA: anti-DNA, numbers stored as TEXT. Normal is below 8.
+      DNA-II: always NULL.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Column names with spaces or hyphens need double quotes, e.g. "First Date", "T-BIL", "aCL IgG".
+  - Age in years at a date D is strftime('%Y', D) - strftime('%Y', Birthday), less one if the birthday has not come yet that year.
+  - Dates are text 'YYYY-MM-DD', so they compare correctly as strings and strftime works on them.

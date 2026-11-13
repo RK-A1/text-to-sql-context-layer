@@ -1,4 +1,4 @@
-"""The agent's database: BIRD's SQLite file, opened read-only, reads only, with a timeout.
+"""The agent's database: one of BIRD's SQLite files, opened read-only, reads only, with a timeout.
 
 An authorizer allows plain reads and a few schema pragmas and denies everything else
 (writes, ATTACH, other pragmas). The grader uses the same connection type.
@@ -7,7 +7,7 @@ An authorizer allows plain reads and a few schema pragmas and denies everything 
 import sqlite3
 import time
 
-from .config import CHAR_CAP, DB_PATH, ROW_CAP, SQL_TIMEOUT_S
+from .config import CHAR_CAP, ROW_CAP, SQL_TIMEOUT_S, db_path
 
 ALLOWED = {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION, sqlite3.SQLITE_RECURSIVE}
 SCHEMA_PRAGMAS = {"table_info", "table_xinfo", "foreign_key_list", "index_list", "index_info"}
@@ -24,8 +24,8 @@ def cell(v):
 
 
 class DB:
-    def __init__(self, path=DB_PATH):
-        self.con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
+    def __init__(self, db):
+        self.con = sqlite3.connect(f"file:{db_path(db)}?mode=ro", uri=True, check_same_thread=False)
         self.con.set_authorizer(authorize)
 
     def query(self, sql, max_rows=None):

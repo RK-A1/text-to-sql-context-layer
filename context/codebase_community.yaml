@@ -1,0 +1,109 @@
+# Context layer: codebase_community
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data), BIRD's column
+# descriptions checked against the data, and the Stack Exchange data dump's documented codes.
+# Written before reading any of this database's questions.
+
+database: codebase_community
+engine: SQLite
+contents: >
+  A Stack Exchange data dump of Cross Validated, the statistics Q&A site, from 2009 to
+  September 2014: users, posts (questions and answers), comments, votes, badges, tags, post
+  edit history and links between posts.
+
+entities:
+  user:
+    key: users.Id
+    notes:
+      - Id -1 is 'Community', the site's automated account (it owns 211 posts).
+      - DisplayName is not unique (1,563 names are shared), so group by Id.
+  post:
+    key: posts.Id
+    notes:
+      - Questions and answers are both rows in posts, told apart by PostTypeId.
+      - An answer's ParentId is its question's Id. A question's AcceptedAnswerId is the accepted answer's Id.
+
+joins:
+  - posts.OwnerUserId = users.Id                 # the author
+  - posts.LastEditorUserId = users.Id
+  - posts.ParentId = posts.Id                    # answer -> question
+  - comments.PostId = posts.Id; comments.UserId = users.Id
+  - votes.PostId = posts.Id; votes.UserId = users.Id
+  - badges.UserId = users.Id
+  - postHistory.PostId = posts.Id; postHistory.UserId = users.Id
+  - postLinks.PostId = posts.Id; postLinks.RelatedPostId = posts.Id
+  - tags.ExcerptPostId, tags.WikiPostId = posts.Id
+
+tables:
+  posts:
+    columns:
+      PostTypeId: >
+        1 = question (42,912), 2 = answer (47,755), 3 = orphaned tag wiki, 4 = tag wiki excerpt,
+        5 = tag wiki, 6 = moderator nomination, 7 = wiki placeholder.
+      CreaionDate: "Creation date. The column name is misspelled in the database: CreaionDate, not CreationDate."
+      LasActivityDate: "Last activity date. Also misspelled: LasActivityDate."
+      Title, Tags, ViewCount, AnswerCount: set on questions only; NULL on answers.
+      Tags: "The question's tags as '<tag1><tag2>', e.g. '<distributions><normality>'. Match one tag with LIKE '%<regression>%'."
+      Score: the post's net score (upvotes minus downvotes). Use this, not the votes table, for a post's score.
+      ViewCount: number of times the question was viewed.
+      CommentCount, FavoriteCount: number of comments, and of users who marked the question as a favourite (NULL means none).
+      ClosedDate: set when a question was closed by moderators or the community (1,610 questions, e.g. off-topic or duplicate). NULL means open.
+      CommunityOwnedDate: when the post became a community wiki.
+      OwnerUserId, OwnerDisplayName: >
+        The author's Id, NULL on 1,392 posts whose author's account is gone. OwnerDisplayName is
+        mostly NULL; it is filled on 2,509 posts, mainly those without an OwnerUserId. For an
+        author's name, join users on OwnerUserId.
+      Body: HTML text.
+  comments:
+    columns:
+      Score: >
+        Number of upvotes the comment received (0 for 77% of comments, at most 90). It is not a
+        0-100 rating.
+      UserId: the commenter. NULL on 2,835 comments from deleted accounts, which keep a UserDisplayName.
+      CreationDate: "'YYYY-MM-DD HH:MM:SS.0'."
+  votes:
+    grain: one vote, but only votes cast from 2010-07-19 to 2011-05-01 (on posts with Id up to 16,921). The table is incomplete.
+    columns:
+      VoteTypeId: >
+        1 = answer accepted, 2 = upvote, 3 = downvote, 5 = favourite, 8 = bounty started,
+        9 = bounty closed, 10 = deletion, 11 = undeletion, 15 = moderator review,
+        16 = approved edit suggestion.
+      CreationDate: "Date only, 'YYYY-MM-DD'."
+      UserId: the voter; NULL for most vote types (votes are anonymous).
+      BountyAmount: bounty size for bounty votes.
+  users:
+    columns:
+      Reputation: the user's reputation points.
+      Views: number of times the user's profile was viewed.
+      UpVotes, DownVotes: votes the user has cast (not received).
+      Age: in years, NULL for 80% of users.
+      CreationDate, LastAccessDate: "'YYYY-MM-DD HH:MM:SS.0'."
+      Location, WebsiteUrl, AboutMe: free text, often NULL.
+  badges:
+    grain: one badge awarded to one user
+    columns:
+      Name: badge name, e.g. 'Student', 'Supporter', 'Editor', 'Scholar', 'Teacher'.
+      Date: when it was awarded, 'YYYY-MM-DD HH:MM:SS.0'.
+  postHistory:
+    columns:
+      PostHistoryTypeId: >
+        1 = initial title, 2 = initial body, 3 = initial tags, 4 = edit title, 5 = edit body,
+        6 = edit tags, 7 to 9 = rollbacks, 10 = closed, 11 = reopened, 12 = deleted,
+        13 = undeleted, 14 = locked, 15 = unlocked, 16 = made community wiki, 24 = suggested
+        edit applied, 25 = tweeted, 33/34 = notice added/removed, 35/36 = migrated away/here.
+      Text: "the new title, body or tags. Comment: the editor's summary ('' when none)."
+  postLinks:
+    columns:
+      LinkTypeId: "1 = linked (related), 3 = duplicate."
+  tags:
+    columns:
+      TagName: e.g. 'r', 'regression', 'bayesian'.
+      Count: number of questions with this tag.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Dates are text 'YYYY-MM-DD HH:MM:SS.0'; strftime('%Y', ...) and date(...) work on them.

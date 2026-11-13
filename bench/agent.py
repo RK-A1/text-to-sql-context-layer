@@ -6,10 +6,11 @@ An agent still exploring after MAX_STEPS calls gets one more call, told to submi
 """
 
 import csv
+import io
 import json
 import re
 
-from .config import CONTEXT_LAYER, DICTIONARY_DIR, MAX_STEPS
+from .config import MAX_STEPS, context_layer, dictionary_dir
 
 SYSTEM = """You answer questions about a SQLite database by writing SQL.
 
@@ -51,12 +52,21 @@ TOOLS = [
 ]
 
 
-def dictionary_text():
+def read_csv_text(path):
+    """BIRD's CSVs are UTF-8, except four that are Windows-1252 (bullets and dashes)."""
+    raw = path.read_bytes()
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return raw.decode("cp1252")
+
+
+def dictionary_text(db):
     """BIRD's database_description CSVs as plain text, content unchanged apart from whitespace."""
     parts = []
-    for path in sorted(DICTIONARY_DIR.glob("*.csv")):
+    for path in sorted(dictionary_dir(db).glob("*.csv")):
         lines = [f"## {path.stem}"]
-        with path.open(encoding="utf-8-sig", newline="") as f:
+        with io.StringIO(read_csv_text(path), newline="") as f:
             for row in csv.DictReader(f):
                 clean = {k.strip(): " ".join((v or "").split()) for k, v in row.items() if k}
                 line = f"- {clean['original_column_name']}"
@@ -70,19 +80,13 @@ def dictionary_text():
     return "\n\n".join(parts)
 
 
-def system_prompt(arm, schema):
+def system_prompt(arm, db, schema):
     text = SYSTEM.format(schema=schema)
     if arm == "dictionary":
-        text += DICTIONARY.format(dictionary=dictionary_text())
+        text += DICTIONARY.format(dictionary=dictionary_text(db))
     elif arm == "context":
-        text += CONTEXT.format(context=CONTEXT_LAYER.read_text().strip())
+        text += CONTEXT.format(context=context_layer(db).read_text().strip())
     return text
-
-
-def user_prompt(arm, item):
-    if arm == "hints" and item["evidence"].strip():
-        return f"{item['question']}\n\nHint: {item['evidence']}"
-    return item["question"]
 
 
 def sql_from_text(text):

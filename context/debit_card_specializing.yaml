@@ -1,0 +1,62 @@
+# Context layer: debit_card_specializing
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: debit_card_specializing
+engine: SQLite
+contents: >
+  A Czech fuel-card company's business customers (32,461), the gas stations that accept the
+  card (5,716 in the Czech Republic and Slovakia), the products sold, a sample of 1,000 card
+  transactions from 23 to 26 August 2012, and each customer's monthly consumption.
+
+joins:
+  - transactions_1k.CustomerID = customers.CustomerID
+  - transactions_1k.GasStationID = gasstations.GasStationID
+  - transactions_1k.ProductID = products.ProductID
+  - yearmonth.CustomerID = customers.CustomerID
+
+tables:
+  customers:
+    columns:
+      Segment: "Customer segment: 'SME' (26,763), 'LAM' (3,658), 'KAM' (2,040)."
+      Currency: "'CZK' (30,459) or 'EUR' (2,002). The customer's transactions are priced in this currency."
+  gasstations:
+    columns:
+      Country: "'CZE' = Czech Republic (4,836), 'SVK' = Slovakia (880)."
+      ChainID: the chain the station belongs to (233 chains).
+      Segment: "Chain segment: 'Other', 'Premium', 'Noname', 'Value for money', 'Discount'."
+  products:
+    columns:
+      Description: >
+        Mostly Czech, with accents partly lost: 'Nafta' = diesel, 'Natural' = unleaded petrol,
+        'Diesel', 'Diesel +', 'Nat.Super'. Not unique (529 descriptions for 591 products).
+  transactions_1k:
+    grain: one card transaction; only 1,000 of them, all from 2012-08-23 to 2012-08-26
+    columns:
+      Date: "'YYYY-MM-DD'."
+      Time: "'HH:MM:SS'."
+      Amount: quantity bought, e.g. litres of fuel. 0 on 91 rows.
+      Price: >
+        The total charged for the transaction, in the customer's currency, not a unit price:
+        Price / Amount is the unit price (about 23 CZK or 0.92 EUR per litre of 'Nafta').
+        (BIRD's dictionary says total price = Amount x Price; the data says Price is already the total.)
+      CardID: the card used; one customer can have several cards.
+  yearmonth:
+    grain: one row per customer per month
+    columns:
+      Date: >
+        Month as text 'YYYYMM', e.g. '201201'. 21 months from '201112' to '201311'; October,
+        November and December 2012 are missing. The year is substr(Date, 1, 4) and the month
+        substr(Date, 5, 2).
+      Consumption: the customer's total consumption that month (BIRD gives no unit). Negative on 152 rows.
+    notes:
+      - 30,566 of the 32,461 customers have monthly rows.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - yearmonth.Date is not a date; compare it as text ('201201' <= Date AND Date <= '201212').

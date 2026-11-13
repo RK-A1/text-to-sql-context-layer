@@ -1,0 +1,87 @@
+# Context layer: student_club
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: student_club
+engine: SQLite
+contents: >
+  One university club's records for the 2019-2020 school year: 33 members, 42 events, who
+  attended which event, each event's budget lines, the expenses charged to them, and the club's
+  income. zip_code is a full US ZIP code directory (41,877 rows) used to look up members'
+  hometowns.
+
+entities:
+  member:
+    key: member.member_id (text, e.g. 'rec1x5zBFIqoOuPW8'; every table uses these record ids)
+    notes:
+      - A member's full name is first_name || ' ' || last_name.
+      - "position: 'Member' (26), 'Inactive' (3), and one each of 'President', 'Vice President',
+        'Treasurer', 'Secretary'."
+  event:
+    key: event.event_id
+    notes:
+      - event_name is not unique (three names are used twice), so count and join events by event_id.
+
+joins:
+  - attendance.link_to_event = event.event_id; attendance.link_to_member = member.member_id   # who attended what
+  - budget.link_to_event = event.event_id                  # 23 of the 42 events have a budget
+  - expense.link_to_budget = budget.budget_id              # expense -> budget -> event
+  - expense.link_to_member = member.member_id              # who paid; always one of three officers
+  - income.link_to_member = member.member_id               # NULL for income that isn't dues
+  - member.link_to_major = major.major_id                  # NULL for one member
+  - member.zip = zip_code.zip_code
+
+tables:
+  event:
+    columns:
+      event_date: "Text 'YYYY-MM-DDTHH:MM:SS', e.g. '2020-03-10T12:00:00', from 2019-09-01 to 2020-05-05."
+      type: "'Meeting' (16), 'Guest Speaker' (7), 'Game' (6), 'Social' (4), 'Community Service' (4), 'Election' (2), 'Budget' (2), 'Registration' (1)."
+      status: "'Closed', 'Open' or 'Planning'. Same as budget.event_status for every budget line."
+      location: NULL on 6 events; 'MU 215' is the usual meeting room.
+  attendance:
+    grain: one row per event per member who attended (326 rows, 17 events, 30 members)
+  budget:
+    grain: one row per event per spending category
+    columns:
+      category: "'Food', 'Advertisement', 'Speaker Gifts', 'Parking', 'Club T-Shirts'."
+      amount: dollars budgeted.
+      spent: dollars spent so far. Always equals the sum of expense.cost for that budget line.
+      remaining: amount - spent. Negative when over budget. Stored as a float, e.g. -0.199999999999999.
+  expense:
+    columns:
+      expense_date: "Text 'YYYY-MM-DD', from 2019-08-20 to 2019-11-19."
+      cost: dollars.
+      approved: "Text 'true' (31 rows) or NULL (1). There is no 'false'."
+      expense_description: free text with inconsistent wording, e.g. 'Water, chips, cookies' and 'Water, cookies, chips'.
+  income:
+    columns:
+      source: "'Dues' (33 rows of $50, from 31 members), 'Sponsorship' ($1,000), 'School Appropration' ($3,000; spelled this way), 'Fundraising' ($200)."
+      date_received: "Text 'YYYY-MM-DD', September to October 2019."
+  major:
+    columns:
+      major_name, department, college: 113 majors in 47 departments and 8 colleges.
+  member:
+    columns:
+      zip: hometown ZIP code as an INTEGER, so leading zeros are lost (5 members, e.g. 1020 for 01020).
+      phone: text in two formats, '(651) 928-4507' and '954-555-6240'.
+      t_shirt_size: "'Small', 'Medium', 'Large', 'X-Large'."
+  zip_code:
+    columns:
+      type: "'Standard', 'PO Box' or 'Unique' (a ZIP code assigned to one organization)."
+      state, short_state: full state name and two-letter code.
+      county: NULL on 88 rows.
+
+metrics:
+  event_spend: SUM(expense.cost) over the event's budget lines, or SUM(budget.spent) for the event
+  budget_left: SUM(budget.remaining)
+  attendance_count: COUNT(*) FROM attendance WHERE link_to_event = the event's event_id
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - event_date includes a time, so compare dates with date(event_date) or substr(event_date, 1, 10).
+  - Money is stored as REAL; round only when asked to.

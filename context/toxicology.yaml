@@ -1,0 +1,63 @@
+# Context layer: toxicology
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data) and BIRD's column
+# descriptions, checked against the data. Written before reading any of this database's questions.
+
+database: toxicology
+engine: SQLite
+contents: >
+  343 molecules labelled carcinogenic or not, with their atoms (9,111) and the bonds between
+  atoms (9,156).
+
+entities:
+  molecule:
+    key: molecule.molecule_id, text 'TR' + 3 digits, e.g. 'TR000' (TR000 to TR501, with gaps)
+  atom:
+    key: atom.atom_id, '<molecule_id>_<n>', e.g. 'TR000_1' is atom 1 of molecule TR000
+  bond:
+    key: bond.bond_id, '<molecule_id>_<n1>_<n2>', e.g. 'TR000_2_3' joins atoms TR000_2 and TR000_3
+
+joins:
+  - atom.molecule_id = molecule.molecule_id
+  - bond.molecule_id = molecule.molecule_id
+  - connected.atom_id = atom.atom_id; connected.atom_id2 = atom.atom_id; connected.bond_id = bond.bond_id
+
+tables:
+  molecule:
+    columns:
+      label: "'+' = carcinogenic (152 molecules), '-' = not carcinogenic (191)."
+  atom:
+    columns:
+      element: >
+        Lower-case chemical symbol. Counts: h 4,034, c 3,433, o 737, n 373, cl 317, s 94, br 46,
+        na 32, p 23, f 10, i 3, sn 2, cu 2, zn 1, y 1, pb 1, k 1, ca 1. Names: h hydrogen,
+        c carbon, o oxygen, n nitrogen, cl chlorine, s sulfur, br bromine, na sodium,
+        p phosphorus, f fluorine, i iodine, sn tin, cu copper, zn zinc, y yttrium, pb lead,
+        k potassium, ca calcium. (BIRD's dictionary lists te, tellurium, which never appears,
+        and leaves out cu, zn, y and k.)
+    notes:
+      - Molecules have 4 to 109 atoms, 27 on average.
+  bond:
+    columns:
+      bond_type: "'-' = single (7,743), '=' = double (1,408), '#' = triple (5, in 3 molecules)."
+  connected:
+    grain: >
+      Two rows per bond, one in each direction: (atom_id = A, atom_id2 = B) and (atom_id = B,
+      atom_id2 = A), both with the same bond_id. 18,312 rows for 9,156 bonds. Count bonds from
+      the bond table, or COUNT(DISTINCT bond_id), never with COUNT(*) on connected.
+    notes:
+      - To find the atoms a bond joins, take the bond's two connected rows, or one row and
+        both of its atom columns.
+      - 38 atoms have no bonds.
+
+metrics:
+  carcinogenic_share: CAST(SUM(label = '+') AS REAL) / COUNT(*) over molecules
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - Ids are text, so they sort as text ('TR000_10' comes before 'TR000_2'). To order atoms within
+    a molecule numerically, use CAST(substr(atom_id, 7) AS INTEGER).

@@ -1,0 +1,115 @@
+# Context layer: financial
+#
+# What a data team writes once so that an analytics agent can query this database correctly.
+# It describes the data: what each table and column means, how tables join, how the standard
+# metrics are computed, and where the data misleads. It contains no per-question hints.
+#
+# Sources: profiling the database (every count below comes from the data), BIRD's column
+# descriptions checked against the data, and the documentation of the original PKDD'99 Czech
+# bank dataset that this database comes from. Written before reading any of this database's questions.
+
+database: financial
+engine: SQLite
+contents: >
+  A Czech bank, 1993 to 1998: 4,500 accounts, the 5,369 clients who can use them, cards,
+  loans, standing payment orders, and 1,056,320 account transactions. Codes are Czech words.
+
+entities:
+  account:
+    key: account.account_id
+    notes:
+      - account.district_id is the district of the bank branch that holds the account.
+  client:
+    key: client.client_id
+    notes:
+      - client.district_id is the district where the client lives. It differs from the account's
+        branch district for 409 of the 4,500 account owners.
+  disposition:
+    key: disp.disp_id
+    notes:
+      - disp links clients to accounts. type 'OWNER' (exactly one per account, 4,500) or
+        'DISPONENT' (869; a client allowed to use someone else's account). Only owners can order
+        standing payments or take loans, and every card belongs to an owner.
+
+joins:
+  - disp.account_id = account.account_id; disp.client_id = client.client_id
+  - card.disp_id = disp.disp_id                       # card -> disp -> client and account
+  - loan.account_id = account.account_id              # at most one loan per account
+  - '"order".account_id = account.account_id'
+  - trans.account_id = account.account_id
+  - account.district_id = district.district_id; client.district_id = district.district_id
+
+tables:
+  account:
+    columns:
+      date: "Date the account was opened, 'YYYY-MM-DD' (BIRD's dictionary says YYMMDD; the data is ISO)."
+      frequency: >
+        How often statements are issued: 'POPLATEK MESICNE' = monthly (4,167),
+        'POPLATEK TYDNE' = weekly (240), 'POPLATEK PO OBRATU' = after each transaction (93).
+  client:
+    columns:
+      gender: "'M' or 'F'."
+      birth_date: "'YYYY-MM-DD'."
+  card:
+    columns:
+      type: "'classic' (659), 'junior' (145), 'gold' (88)."
+      issued: "Date the card was issued, 'YYYY-MM-DD'."
+  loan:
+    columns:
+      date: date the loan was granted, 'YYYY-MM-DD'.
+      amount: the loan amount. Always equals duration * payments.
+      duration: length in months, one of 12, 24, 36, 48, 60.
+      payments: the monthly payment, a money amount (BIRD's dictionary gives its unit as 'month').
+      status: >
+        'A' = contract finished, no problems (203); 'B' = finished, loan not paid (31);
+        'C' = running, OK so far (403); 'D' = running, client in debt (45).
+  order:
+    grain: one standing payment order from an account
+    columns:
+      bank_to, account_to: the recipient's bank (two-letter code) and account number.
+      amount: amount of each payment.
+      k_symbol: "Purpose: 'SIPO' = household bills, 'UVER' = loan repayment, 'POJISTNE' = insurance, 'LEASING' = leasing, '' (1,379) = not given."
+  trans:
+    grain: one transaction on an account
+    columns:
+      date: "'YYYY-MM-DD', 1993-01-01 to 1998-12-31."
+      type: >
+        'PRIJEM' = money in (405,083); 'VYDAJ' = money out (634,571); 'VYBER' = cash
+        withdrawal (16,666; a code BIRD's dictionary leaves out). Money out is both 'VYDAJ'
+        and 'VYBER'.
+      operation: >
+        'VYBER' = cash withdrawal, 'VYBER KARTOU' = card withdrawal, 'VKLAD' = cash deposit,
+        'PREVOD Z UCTU' = transfer in from another bank, 'PREVOD NA UCET' = transfer out to
+        another bank. NULL exactly on the 183,114 interest credits (k_symbol 'UROK').
+      amount: amount of the transaction, never negative; the direction is in type.
+      balance: account balance after the transaction. Can be negative.
+      k_symbol: >
+        Purpose: 'UROK' = interest credited, 'SANKC. UROK' = penalty interest on a negative
+        balance, 'SLUZBY' = statement fee, 'SIPO' = household bills, 'DUCHOD' = pension,
+        'POJISTNE' = insurance, 'UVER' = loan repayment. Blank is stored both as NULL
+        (481,881) and as a single space ' ' (53,433).
+      bank, account: the other party's bank and account, for transfers.
+  district:
+    grain: one of 77 Czech districts
+    columns:
+      A2: district name, e.g. 'Hl.m. Praha' (Prague), 'Benesov'.
+      A3: "region, one of 8: 'Prague', 'central Bohemia', 'south Bohemia', 'west Bohemia', 'north Bohemia', 'east Bohemia', 'south Moravia', 'north Moravia'."
+      A4: number of inhabitants, stored as TEXT. CAST(A4 AS INTEGER) before comparing or sorting.
+      A5: number of municipalities with fewer than 500 inhabitants (TEXT).
+      A6: number of municipalities with 500 to 1,999 inhabitants (TEXT).
+      A7: number of municipalities with 2,000 to 9,999 inhabitants (TEXT).
+      A8: number of municipalities with 10,000 or more inhabitants.
+      A9: number of cities.
+      A10: share of urban inhabitants, in percent (0 to 100).
+      A11: average salary.
+      A12: unemployment rate in 1995, in percent. NULL for Jesenik.
+      A13: unemployment rate in 1996, in percent.
+      A14: entrepreneurs per 1,000 inhabitants.
+      A15: number of crimes committed in 1995. NULL for Jesenik.
+      A16: number of crimes committed in 1996.
+
+sqlite_notes:
+  - Dividing one integer by another truncates. Cast to REAL first for averages and percentages.
+  - order is an SQL keyword, so the table must be quoted as "order" or `order`.
+  - Dates are text 'YYYY-MM-DD'; strftime('%Y', date) gives the year.
+  - district.A4 to A7 are numbers stored as text and sort as text ('95907' > '1204953') unless cast.
