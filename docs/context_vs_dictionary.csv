@@ -1,0 +1,74 @@
+db,question_id,right,reason,note
+california_schools,32,dictionary,agent slip,extra School column
+card_games,340,dictionary,key uses a definition only BIRD's dictionary gives,'incredibly powerful foils' means both Card Kingdom ids are set
+card_games,383,dictionary,key reads the question more narrowly than the layer advises,layer advises counting distinct card names; key counts printings
+card_games,412,dictionary,key reads the question more narrowly than the layer advises,layer advises LIKE for type lists; key needs types = 'Creature' exactly
+card_games,465,dictionary,agent slip,"returned set codes, not set names"
+card_games,479,dictionary,agent slip,left out power '*'
+card_games,487,dictionary,key uses a definition only BIRD's dictionary gives,'incredibly powerful' again; agent ran out of steps looking for it
+codebase_community,565,dictionary,key uses a definition only BIRD's dictionary gives,'well-finished' means the question was closed; layer says a closed date means closed
+codebase_community,634,dictionary,key uses a definition only BIRD's dictionary gives,'popularity' means view count
+codebase_community,665,dictionary,agent slip,averaged over months with links instead of dividing by 12
+codebase_community,716,dictionary,agent slip,wrong denominator
+debit_card_specializing,1531,dictionary,key uses a definition only BIRD's dictionary gives,"key treats Price as a unit price, as the dictionary says; the data and the layer say it is the total"
+european_football_2,1031,dictionary,agent slip,age not adjusted for birthdays later in the year
+european_football_2,1084,dictionary,key uses a definition only BIRD's dictionary gives,'remain in his position and defense' is the dictionary's wording for defensive_work_rate 'high'
+european_football_2,1107,dictionary,key reads the question more narrowly than the layer advises,layer advises date(); key returns the stored text with its time
+european_football_2,1145,dictionary,agent slip,extra column
+european_football_2,1147,dictionary,key uses a definition only BIRD's dictionary gives,'overall strength' means overall_rating
+financial,138,dictionary,key uses a definition only BIRD's dictionary gives,dictionary calls the client's district the branch; the layer separates them
+financial,149,dictionary,agent slip,no answer (output cut off)
+financial,168,dictionary,agent slip,rounded
+formula_1,854,dictionary,agent slip,extra column
+formula_1,868,dictionary,agent slip,extra column
+formula_1,877,dictionary,agent slip,no answer (output cut off)
+formula_1,940,dictionary,key uses a definition only BIRD's dictionary gives,'finished the race' means results.time is set
+formula_1,944,dictionary,agent slip,no answer (output cut off)
+formula_1,959,dictionary,key uses a definition only BIRD's dictionary gives,"'champion' means race winner, from the dictionary's note on results.time"
+student_club,1339,dictionary,agent slip,"averaged per event, not per expense"
+student_club,1375,dictionary,key reads the question more narrowly than the layer advises,layer gives full name as one string; key returns two columns
+student_club,1378,dictionary,key reads the question more narrowly than the layer advises,layer's event_spend metric sums an event's lines; key takes one budget line
+superhero,736,dictionary,agent slip,"extra column, one hero instead of all ties"
+superhero,747,dictionary,key reads the question more narrowly than the layer advises,layer notes '-' also means no full name; key counts NULL only
+superhero,788,dictionary,agent slip,rounded
+superhero,819,dictionary,agent slip,took the absolute value
+thrombosis_prediction,1152,dictionary,key reads the question more narrowly than the layer advises,layer advises LIKE '%SLE%'; key counts Diagnosis = 'SLE' only
+thrombosis_prediction,1175,dictionary,agent slip,no answer (output cut off)
+thrombosis_prediction,1185,dictionary,agent slip,multiplied by 100
+thrombosis_prediction,1195,dictionary,key reads the question more narrowly than the layer advises,LIKE '%SLE%' again
+thrombosis_prediction,1205,dictionary,agent slip,extra Date column
+thrombosis_prediction,1209,dictionary,agent slip,extra column
+thrombosis_prediction,1247,dictionary,key uses a definition only BIRD's dictionary gives,"key uses the dictionary's fibrinogen range, which no stored value reaches; layer flags the unit mismatch"
+thrombosis_prediction,1267,dictionary,agent slip,different logic
+toxicology,201,dictionary,agent slip,rounded
+toxicology,208,dictionary,agent slip,extra column
+toxicology,215,dictionary,agent slip,read 'single bond molecules' as molecules with only single bonds
+toxicology,219,dictionary,agent slip,malformed query
+toxicology,232,dictionary,agent slip,ordered by bond count
+toxicology,268,dictionary,agent slip,returned one atom twice
+california_schools,24,context,layer adds a fact the key uses,SAT table mixes schools with district totals (rtype = 'S')
+california_schools,26,context,agent slip,dictionary arm joined the address into one column
+california_schools,41,context,layer adds a fact the key uses,SAT district totals again (rtype = 'S')
+card_games,459,context,agent slip,dictionary arm added a column
+card_games,480,context,agent slip,dictionary arm filtered to one set
+card_games,528,context,agent slip,dictionary arm grouped formats into one string
+codebase_community,637,context,agent slip,dictionary arm split the tags
+codebase_community,640,context,agent slip,dictionary arm looked up the wrong users
+debit_card_specializing,1524,context,layer adds a fact the key uses,nationality comes from the station's country code
+european_football_2,1029,context,agent slip,dictionary arm added a column
+european_football_2,1133,context,agent slip,dictionary arm included 1990 births
+european_football_2,1144,context,agent slip,dictionary arm kept only the latest rating
+financial,173,context,agent slip,dictionary arm hard-coded the answer text
+formula_1,866,context,agent slip,dictionary arm ran out of steps
+formula_1,875,context,agent slip,dictionary arm added a column
+formula_1,880,context,agent slip,dictionary arm added columns
+formula_1,964,context,agent slip,dictionary arm dropped NULL codes
+formula_1,981,context,agent slip,dictionary arm used the wrong driver
+student_club,1432,context,agent slip,dictionary arm used the wrong denominator
+superhero,791,context,layer adds a fact the key uses,a height of 0 means missing
+superhero,794,context,agent slip,dictionary arm returned one hero instead of all ties
+thrombosis_prediction,1155,context,agent slip,dictionary arm used >= instead of >
+thrombosis_prediction,1166,context,agent slip,dictionary arm took the examination's diagnosis
+thrombosis_prediction,1270,context,layer adds a fact the key uses,SC170 '0' also means negative
+toxicology,228,context,agent slip,dictionary arm wrote an unrelated query
+toxicology,239,context,layer adds a fact the key uses,an atom's number is the end of its id

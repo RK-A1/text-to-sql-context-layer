@@ -1,64 +1,94 @@
 # Text-to-SQL with and without a context layer
 
-I wanted to know how much a context layer helps a text-to-SQL agent. A context layer is a file that a data team
-writes once to explain what the tables mean, how they join and how metrics are computed. I gave one agent the 30
-questions on BIRD Mini-Dev's `california_schools` database with four kinds of context, and graded every answer
-twice: against the labels before and after Jin et al.'s [audit of BIRD](https://arxiv.org/abs/2601.08778), which
-found errors in 52.8% of Mini-Dev. The model is DeepSeek V4.1 Flash, run three times per question.
+I wanted to know whether a context layer makes an AI agent better at answering questions about a database by
+writing SQL. A context layer is a file a data team writes once to explain what the tables mean, how they join, what
+the codes stand for and where the data misleads. I made one for each of the 11 databases in BIRD Mini-Dev, a public
+text-to-SQL benchmark, and had the same agent answer its 496 questions three ways: with no extra help, with the data
+dictionary that BIRD ships, and with my context layer. Every answer is graded against the corrected answer key from
+Jin et al.'s [2026 audit of BIRD](https://arxiv.org/abs/2601.08778).
 
 ## Results
 
+My context layer made no measurable difference, and BIRD's own dictionary did better than it.
+
+| Extra help | Questions answered right |
+|---|---|
+| None | 62% |
+| BIRD's data dictionary | 69% |
+| My context layer | 65% |
+
+The layer's 3-point lead over no help is within what chance could produce (the 95% interval runs from -0.4 to +7.1
+points). The dictionary's 7.5-point lead is not, and it beat the layer by 4.
+
+That surprised me, because the layer corrects more than a dozen mistakes in the dictionary. Comparing the two
+question by question shows why. They disagreed on 73 questions:
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/accuracy-dark.svg">
-  <img alt="Execution accuracy for each kind of context, graded against the original and the corrected labels" src="docs/accuracy.svg" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/disagreements-dark.svg">
+  <img alt="Of 73 questions only one of the two answered right, the dictionary won 47 and the context layer 26. Agent slips split 28 to 20; the answer key relying on a definition only BIRD's dictionary gives accounts for 11 of the dictionary's wins, a narrower reading of the question for 8, and facts the layer supplies for 6 of the layer's." src="docs/disagreements.svg" width="720">
 </picture>
 
-Grading the same answers against the corrected labels moves the arms in opposite directions. The agent with BIRD's
-hints loses 10 points, because the hints were written for the original queries and following them reproduces those
-queries, mistakes included: on the 9 questions where the two labels disagree, its answers matched the original label
-14 times and the corrected one 5 times. The agent with the context layer gains 4 points and finishes 3 points ahead
-of the schema alone, but 30 questions can't tell that lead from noise (its 95% interval runs from -9 to +17).
+Slips, such as returning an extra column, happen to both. What tips the balance is the answer key. On 11 questions
+it relies on a definition that only BIRD's dictionary gives, and on 8 more it reads the question more narrowly than
+my layer advised. The layer won 6 by supplying a fact the key also uses.
 
-The layer changed the agent's SQL far more than its score. Every context-arm answer that used the SAT table dropped
-its district totals, as the audit's corrections do, against 8 to 19% of answers in the other arms. Yet on the ten
-questions where the audit added that filter, the context arm beat the schema arm on only one. The rest turned on
-other details, such as how many of a school's three administrator slots to return, or whether every school tied for
-the lowest rate counts.
+Some of those definitions are wrong about the data. On the fuel-card database the dictionary says a transaction's
+price is per unit, but dividing it by the quantity gives a steady 23 crowns a litre for diesel, so it is the total,
+as my layer says. The key follows the dictionary, so the agent that believed the data was marked wrong. The audit
+even rewrote that question's reference query and kept the per-unit reading. On the statistics Q&A site, a
+"well-finished" post is, by the dictionary's definition, one with a closed date, which on Stack Exchange means the
+question was shut down. So part of the dictionary's lead is not better documentation but agreement with the answer
+key, including where both are wrong.
 
-## Setup
+## The data
 
-Every arm gets the table definitions and a `run_sql` tool for exploring the data. The `schema` arm gets nothing
-else. The `dictionary` arm adds the data dictionary that BIRD ships with the database. The `hints` arm adds BIRD's
-hint for each question, which no real user would supply. The `context` arm adds
-[a context layer](context/california_schools.yaml) that I wrote by profiling the database. It is shorter than BIRD's
-dictionary and corrects several things the dictionary gets wrong: it calls the `rtype` column that separates schools
-from district totals "unuseful", it says K-12 enrollment starts at first grade, and its excellence-rate formula
-truncates to zero for most schools under SQLite's integer division.
+BIRD Mini-Dev has 500 questions over 11 SQLite databases, most of them built from public datasets: California
+schools, a Czech bank, a Czech fuel-card company, Formula 1 since 1950, European football, Magic: The Gathering
+cards, the Cross Validated statistics Q&A site, a hospital's lab tests, molecules tested for cancer risk,
+superheroes and a student club. Each question comes with a reference SQL query, and the right answer is whatever
+that query returns. Each database also ships with a data dictionary, one CSV per table describing its columns. The
+audit kept BIRD's questions and rewrote the reference queries it judged wrong. I grade against its version and
+leave out 2 of its 498 questions, whose reference query runs longer than 30 seconds.
 
-The original labels are the ones the audit started from. The corrected labels come from the audit's SQL-only
-release, which changes the reference queries but not the questions, so the same answer can be graded against both.
-On this database they give different answers to 9 of the 30 questions. Scoring is BIRD's execution accuracy with
-floats rounded to 10 significant digits, because BIRD's strict version marks 0.904907975460123 wrong against
-0.9049079754601227. Strict scores are in each run's `summary.md`.
+`bench/fetch_data.py` pulls only the databases, dictionaries and question file out of BIRD's 800 MB zip, takes the
+audit's answer key from its GitHub repository at a fixed commit, and checks every file against a pinned checksum, so
+each run sees the same bytes. The agent, DeepSeek V4.1 Flash, sees the table definitions plus whichever extra help
+its version gets, and works through a read-only connection: it can only read, each query stops after 30 seconds,
+and it sees at most 30 rows of any result. It has up to nine model calls to explore the data and submit one query.
+The grader runs that query again and counts it right when it returns the same set of rows as the reference, with
+decimals compared to 10 significant digits. Every model call, answer and conversation is saved under `results/`,
+and a spend cap stops the run if it goes over budget.
+
+## How the context layers were made
+
+I drafted the layers with an AI coding assistant that could query each database. For every table it counted rows,
+listed the values in code columns, measured how often each column is empty and checked that the joins match. Then
+it checked BIRD's dictionary against the data and wrote down what holds and where the data misleads:
+Formula 1's standings hold running season totals, not points per race, and footballers' weights are in pounds. A
+few meanings come from the original datasets' public documentation instead, such as the Czech bank's district
+columns. Each layer is 700 to 1,800 tokens long and is in [context/](context/). They were committed before anyone
+read the questions (commit 4c05389), except for california_schools, the pilot database.
+
+What profiling cannot supply is the benchmark's own definitions, such as "popular" meaning most viewed, and where
+those definitions contradict the data, the layers side with the data. Those are the 11 questions above.
 
 ## Limitations
 
-Thirty questions on one database is a small sample. The context layer isn't blind: I wrote it after reading the paper
-and seeing some of these questions, although everything in it comes from the data or the state's file documentation
-rather than from the questions. I changed it once, before either run, to fix a false claim about the percentage
-columns. The first run, in `results/20261110_102042_spike`, gave up on agents still exploring after eight steps,
-which left 12 to 20% of each arm unanswered and put the context layer 3 to 4 points behind the schema alone. The
-second gives them one last call to submit. The hints lost 10 points to the corrected labels in both.
+This is one run of one cheap model on one benchmark. The per-database results in each run's `summary.md` rest on 30
+to 66 questions each, too few to say where the layer helps most. I made the layers and also sorted the 73
+disagreements, so the sorting is in [docs/context_vs_dictionary.csv](docs/context_vs_dictionary.csv) for anyone to
+check. The assistant that drafted the layers may have seen BIRD during its training. Leaving out california_schools
+moves each comparison by less than a point. `results/` also holds the pilot runs on california_schools alone.
 
 ## Run it
 
-A full run makes about 1,700 model calls and costs about $0.80 on OpenRouter.
+A full run makes about 6,100 model calls and costs about $2 on OpenRouter.
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env    # add OPENROUTER_API_KEY
 python -m bench.fetch_data
-python -m bench.run --repeats 3 --label main
+python -m bench.run --label main
 python -m bench.report results/<run_dir>
 python -m bench.plot results/<run_dir>
 ```

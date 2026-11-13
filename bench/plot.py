@@ -1,10 +1,12 @@
-"""Draw the README chart: accuracy per arm under the original and the corrected label.
+"""Draw the README chart: why BIRD's dictionary beat the context layer.
 
-A dumbbell per arm: the same answers, graded against each label. Writes a light and a dark SVG,
-which the README switches between with <picture>.
+Reads docs/context_vs_dictionary.csv, my reading of every question that exactly one of the two arms
+answered right, checks that it covers exactly those questions in the run, and draws one row per
+reason: the dictionary's wins to the left, the context layer's to the right. Writes a light and a
+dark SVG, which the README switches between with <picture>.
 
 Usage:
-    python -m bench.plot results/<run_dir> [results/<another_run_dir> ...]
+    python -m bench.plot results/<run_dir>
 """
 
 import argparse
@@ -13,80 +15,80 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import ARMS, ROOT
+from .config import ROOT
 
 OUT = ROOT / "docs"
-NAMES = {"schema": "Schema only", "dictionary": "+ BIRD data dictionary",
-         "hints": "+ BIRD hint per question", "context": "+ Context layer"}
-THEMES = {  # chart surface, ink, gridline, connector, original label, corrected label
-    "light": dict(surface="#fcfcfb", ink="#0b0b0b", ink2="#52514e", muted="#898781", grid="#e1e0d9",
-                  link="#c3c2b7", original="#86b6ef", corrected="#1c5cab"),
-    "dark": dict(surface="#1a1a19", ink="#f0efec", ink2="#c3c2b7", muted="#898781", grid="#2c2c2a",
-                 link="#383835", original="#256abf", corrected="#86b6ef"),
+CLASSIFICATION = OUT / "context_vs_dictionary.csv"
+REASONS = {  # reason in the CSV -> row label
+    "key uses a definition only BIRD's dictionary gives": "The answer key uses a definition only BIRD's dictionary gives",
+    "key reads the question more narrowly than the layer advises": "The answer key reads the question more narrowly than my layer advises",
+    "layer adds a fact the key uses": "My layer supplies a fact the answer key relies on",
+    "agent slip": "Agent slip: an extra column, rounding, a cut-off answer, wrong logic",
 }
-W, LEFT, RIGHT, TOP, ROW = 720, 200, 56, 128, 44
+THEMES = {  # categorical slots 1 and 2 of the dataviz reference palette
+    "light": dict(surface="#fcfcfb", ink="#0b0b0b", ink2="#52514e", muted="#898781", axis="#c3c2b7",
+                  dictionary="#2a78d6", context="#eb6834"),
+    "dark": dict(surface="#1a1a19", ink="#f0efec", ink2="#c3c2b7", muted="#898781", axis="#52514e",
+                 dictionary="#3987e5", context="#d95926"),
+}
+W, TOP, ROW, BAR = 720, 116, 58, 18
 
 
-def title(scores):
-    if "hints" in scores and round(scores["hints"][0] - scores["hints"][1]) > 0:
-        return f"Correcting the labels costs BIRD's hints {scores['hints'][0] - scores['hints'][1]:.0f} points"
-    return "Accuracy by context, graded against both labels"
+def load(run_dir):
+    a = pd.read_csv(run_dir / "answers.csv", dtype={"id": str})
+    p = a.pivot_table(index="id", columns="arm", values="correct_corrected_tol", aggfunc="first")
+    disagree = p[p["dictionary"] != p["context"]]
+    c = pd.read_csv(CLASSIFICATION, dtype={"question_id": str}).set_index("question_id")
+    if set(c.index) != set(disagree.index) or any(c.loc[i, "right"] != ("dictionary" if disagree.loc[i, "dictionary"]
+                                                                       else "context") for i in c.index):
+        raise SystemExit(f"{CLASSIFICATION.name} does not match the run's disagreements")
+    return c.groupby(["reason", "right"]).size().unstack(fill_value=0).reindex(REASONS, fill_value=0)
 
 
-def svg(scores, n_questions, n_runs, t):
-    x = lambda v: LEFT + v / 100 * (W - LEFT - RIGHT)
-    h = TOP + ROW * len(scores) + 44
+def svg(counts, t):
+    mid, half = W / 2, W / 2 - 64
+    scale = half / max(30, counts.to_numpy().max())
+    h = TOP + ROW * len(counts) + 12
+    n_dict, n_ctx = int(counts["dictionary"].sum()), int(counts["context"].sum())
     font = 'font-family="system-ui, -apple-system, Segoe UI, sans-serif"'
-    desc = "; ".join(f"{NAMES[a]}: original {o:.0f}%, corrected {c:.0f}%" for a, (o, c) in scores.items())
+    desc = "; ".join(f"{label}: dictionary {int(r['dictionary'])}, context layer {int(r['context'])}"
+                     for label, (_, r) in zip(REASONS.values(), counts.iterrows()))
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{h}" viewBox="0 0 {W} {h}" {font}>',
-           f"<title>Execution accuracy by context, original vs corrected label</title><desc>{escape(desc)}</desc>",
+           f"<title>Why BIRD's dictionary beat my context layer</title><desc>{escape(desc)}</desc>",
            f'<rect width="{W}" height="{h}" rx="8" fill="{t["surface"]}"/>',
-           f'<text x="24" y="36" font-size="17" font-weight="600" fill="{t["ink"]}">'
-           f"{escape(title(scores))}</text>",
-           f'<text x="24" y="58" font-size="13" fill="{t["ink2"]}">BIRD california_schools, {n_questions} '
-           f"questions × {n_runs} runs, DeepSeek V4.1 Flash. Execution accuracy, %.</text>"]
-    for i, (key, label) in enumerate([("original", "Original label"), ("corrected", "Corrected label")]):
-        lx = 24 + i * 150
-        out += [f'<circle cx="{lx + 6}" cy="84" r="6" fill="{t[key]}"/>',
-                f'<text x="{lx + 18}" y="88.5" font-size="13" fill="{t["ink2"]}">{label}</text>']
-    bottom = TOP + ROW * len(scores) - ROW / 2 + 12
-    for v in (0, 25, 50, 75, 100):
-        out += [f'<line x1="{x(v)}" y1="{TOP - 18}" x2="{x(v)}" y2="{bottom}" stroke="{t["grid"]}" stroke-width="1"/>',
-                f'<text x="{x(v)}" y="{bottom + 18}" font-size="12" text-anchor="middle" fill="{t["muted"]}">{v}</text>']
-    for r, (arm, (orig, corr)) in enumerate(scores.items()):
-        y = TOP + r * ROW
-        out += [f'<text x="{LEFT - 16}" y="{y + 4.5}" font-size="13" text-anchor="end" fill="{t["ink"]}">'
-                f"{escape(NAMES[arm])}</text>",
-                f'<line x1="{x(orig)}" y1="{y}" x2="{x(corr)}" y2="{y}" stroke="{t["link"]}" stroke-width="2"/>']
-        for key, v in (("original", orig), ("corrected", corr)):
-            out.append(f'<circle cx="{x(v):.1f}" cy="{y}" r="6" fill="{t[key]}" stroke="{t["surface"]}" stroke-width="2"/>')
-        # Label each end on its outer side; dots too close for two labels share one.
-        def label(v, right, text):
-            out.append(f'<text x="{x(v) + (12 if right else -12):.1f}" y="{y + 4.5}" font-size="12" '
-                       f'text-anchor="{"start" if right else "end"}" fill="{t["ink"]}">{text}</text>')
-        if round(corr) == round(orig):
-            label(max(orig, corr), True, f"{corr:.0f}%, both labels")
-        elif abs(x(corr) - x(orig)) < 16:
-            label(max(orig, corr), True, f"{orig:.0f}% → {corr:.0f}%")
-        else:
-            label(orig, orig > corr, f"{orig:.0f}%")
-            label(corr, corr > orig, f"{corr:.0f}%")
+           f'<text x="24" y="36" font-size="17" font-weight="600" fill="{t["ink"]}">Why BIRD\'s dictionary beat my context layer</text>',
+           f'<text x="24" y="58" font-size="13" fill="{t["ink2"]}">The {n_dict + n_ctx} questions that exactly one of '
+           f'the two answered right, by reason.</text>',
+           f'<rect x="{mid - 22}" y="80" width="12" height="12" rx="2" fill="{t["dictionary"]}"/>',
+           f'<text x="{mid - 30}" y="90.5" font-size="13" text-anchor="end" fill="{t["ink2"]}">BIRD\'s dictionary right ({n_dict})</text>',
+           f'<rect x="{mid + 10}" y="80" width="12" height="12" rx="2" fill="{t["context"]}"/>',
+           f'<text x="{mid + 30}" y="90.5" font-size="13" fill="{t["ink2"]}">My context layer right ({n_ctx})</text>']
+    for i, (label, (_, r)) in enumerate(zip(REASONS.values(), counts.iterrows())):
+        y = TOP + i * ROW
+        out.append(f'<text x="24" y="{y + 10}" font-size="13" fill="{t["ink"]}">{escape(label)}</text>')
+        by = y + 20
+        out.append(f'<line x1="{mid}" y1="{by - 4}" x2="{mid}" y2="{by + BAR + 4}" stroke="{t["axis"]}" stroke-width="1"/>')
+        for arm, sign in (("dictionary", -1), ("context", 1)):
+            n = int(r[arm])
+            w = n * scale
+            x0 = mid if sign > 0 else mid - w
+            if n:
+                out.append(f'<rect x="{x0:.1f}" y="{by}" width="{w:.1f}" height="{BAR}" rx="3" fill="{t[arm]}"/>')
+            tx = mid + sign * (w + 8)
+            out.append(f'<text x="{tx:.1f}" y="{by + 13}" font-size="12" text-anchor="{"start" if sign > 0 else "end"}" '
+                       f'fill="{t["ink"] if n else t["muted"]}">{n}</text>')
     out.append("</svg>")
     return "\n".join(out)
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("run_dirs", type=Path, nargs="+")
+    p.add_argument("run_dir", type=Path)
     args = p.parse_args()
-    df = pd.concat(pd.read_csv(d / "answers.csv", dtype={"id": str}) for d in args.run_dirs)
-    g = df.groupby("arm")
-    means = g[["correct_original_tol", "correct_corrected_tol"]].mean().mul(100)
-    scores = {a: tuple(means.loc[a]) for a in ARMS if a in means.index}
-    OUT.mkdir(exist_ok=True)
+    counts = load(args.run_dir)
     for theme, suffix in (("light", ""), ("dark", "-dark")):
-        path = OUT / f"accuracy{suffix}.svg"
-        path.write_text(svg(scores, df["id"].nunique(), df["repeat"].nunique(), THEMES[theme]))
+        path = OUT / f"disagreements{suffix}.svg"
+        path.write_text(svg(counts, THEMES[theme]))
         print(f"wrote {path.relative_to(ROOT)}")
 
 
